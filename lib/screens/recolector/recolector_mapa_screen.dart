@@ -32,7 +32,7 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
   }
   
   void _loadPuntosRecoleccion() {
-    // Puntos de recolección simulados
+    // Puntos de recolección simulados con IDs de materiales válidos
     setState(() {
       puntosRecoleccion = [
         {
@@ -40,7 +40,7 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
           'position': const LatLng(19.4326, -99.1332),
           'nombre': 'Centro de Acopio Norte',
           'direccion': 'Av. Insurgentes Norte 123',
-          'materiales': ['plastico', 'papel', 'vidrio'],
+          'materiales': ['pet_tipo1', 'papel', 'vidrio'],
           'cantidad': 45.5,
         },
         {
@@ -48,7 +48,7 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
           'position': const LatLng(19.4280, -99.1380),
           'nombre': 'Punto Verde Polanco',
           'direccion': 'Horacio 234, Polanco',
-          'materiales': ['plastico', 'metal', 'electronico'],
+          'materiales': ['hdpe', 'metal', 'carton'],
           'cantidad': 32.0,
         },
         {
@@ -56,7 +56,7 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
           'position': const LatLng(19.4360, -99.1290),
           'nombre': 'Reciclaje Condesa',
           'direccion': 'Amsterdam 567, Condesa',
-          'materiales': ['vidrio', 'papel', 'organico'],
+          'materiales': ['vidrio', 'papel', 'pet_tipo1'],
           'cantidad': 28.5,
         },
         {
@@ -64,7 +64,7 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
           'position': const LatLng(19.4250, -99.1350),
           'nombre': 'EcoPunto Roma',
           'direccion': 'Álvaro Obregón 890, Roma Norte',
-          'materiales': ['plastico', 'papel', 'metal'],
+          'materiales': ['pet_tipo1', 'hdpe', 'metal'],
           'cantidad': 52.0,
         },
         {
@@ -72,7 +72,7 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
           'position': const LatLng(19.4390, -99.1310),
           'nombre': 'Centro Comunitario Juárez',
           'direccion': 'Bucareli 345, Juárez',
-          'materiales': ['organico', 'papel', 'vidrio'],
+          'materiales': ['carton', 'papel', 'vidrio'],
           'cantidad': 18.5,
         },
       ];
@@ -205,7 +205,43 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
                 spacing: 8,
                 runSpacing: 8,
                 children: (punto['materiales'] as List).map((matId) {
-                  final material = materiales.firstWhere((m) => m.id == matId);
+                  // Buscar el material de forma segura
+                  final materialIndex = materiales.indexWhere((m) => m.id == matId);
+                  
+                  // Si no se encuentra el material, crear uno por defecto
+                  if (materialIndex == -1) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: BioWayColors.primaryGreen.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: BioWayColors.primaryGreen.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _getMaterialIcon(matId),
+                            color: BioWayColors.primaryGreen,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            matId.toString().toUpperCase(),
+                            style: TextStyle(
+                              color: BioWayColors.primaryGreen,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  
+                  final material = materiales[materialIndex];
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
@@ -294,18 +330,20 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
   
   IconData _getMaterialIcon(String material) {
     switch (material) {
-      case 'plastico':
+      case 'pet_tipo1':
         return Icons.local_drink;
+      case 'hdpe':
+        return Icons.cleaning_services;
       case 'vidrio':
         return Icons.wine_bar;
       case 'papel':
         return Icons.description;
+      case 'carton':
+        return Icons.inventory_2;
       case 'metal':
         return Icons.hardware;
-      case 'organico':
-        return Icons.eco;
-      case 'electronico':
-        return Icons.devices;
+      case 'raspa_cuero':
+        return Icons.cut;
       default:
         return Icons.recycling;
     }
@@ -363,13 +401,32 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
                 },
               ),
               children: [
-                // Capa de tiles de OpenStreetMap
+                // Capa de tiles - Múltiples opciones de diseño
                 TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  // OPCIÓN 1: CartoDB Positron - Minimalista y limpio (RECOMENDADO)
+                  urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                  subdomains: const ['a', 'b', 'c', 'd'],
+                  
+                  // OPCIÓN 2: CartoDB Dark Matter - Modo oscuro elegante
+                  // urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                  // subdomains: const ['a', 'b', 'c', 'd'],
+                  
+                  // OPCIÓN 3: CartoDB Voyager - Colores suaves y modernos
+                  // urlTemplate: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                  // subdomains: const ['a', 'b', 'c', 'd'],
+                  
+                  // OPCIÓN 4: Stamen Toner Lite - Ultra minimalista en blanco y negro
+                  // urlTemplate: 'https://stamen-tiles.a.ssl.fastly.net/toner-lite/{z}/{x}/{y}.png',
+                  
+                  // OPCIÓN 5: Esri World Gray Canvas - Profesional en escala de grises
+                  // urlTemplate: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+                  
+                  // OPCIÓN 6: OpenStreetMap Estándar (el actual)
+                  // urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  // subdomains: const ['a', 'b', 'c'],
+                  
                   userAgentPackageName: 'com.bioway.app',
-                  // Opciones adicionales para mejorar la experiencia
                   maxZoom: 19,
-                  subdomains: const ['a', 'b', 'c'],
                 ),
                 
                 // Capa de marcadores
@@ -384,9 +441,9 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
                   }).toList(),
                 ),
                 
-                // Atribución de OpenStreetMap (requerida por licencia)
+                // Atribución del mapa (requerida por licencia)
                 const SimpleAttributionWidget(
-                  source: Text('OpenStreetMap contributors'),
+                  source: Text('© CARTO'),
                   backgroundColor: Colors.white,
                 ),
               ],
