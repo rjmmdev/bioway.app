@@ -11,7 +11,13 @@
       "Bash(cp:*)",
       "Bash(find:*)",
       "Bash(rm:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(firebase --version)",
+      "Bash(firebase use:*)",
+      "Bash(firebase:*)",
+      "Bash(dart pub global activate:*)",
+      "Bash(flutterfire configure:*)",
+      "Bash(dart pub global run flutterfire_cli:flutterfire configure:*)"
     ],
     "deny": []
   }

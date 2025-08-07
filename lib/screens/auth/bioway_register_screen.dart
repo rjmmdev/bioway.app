@@ -85,6 +85,9 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
   }
 
   Future<void> _initializeFirebase() async {
+    // MODO DESARROLLO: Firebase deshabilitado temporalmente
+    // TODO: Descomentar para producción
+    /*
     try {
       // Inicializar Firebase para BioWay
       await _authService.initializeForPlatform(FirebasePlatform.bioway);
@@ -97,6 +100,11 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
       // Crear la instancia de todos modos para evitar errores
       _bioWayAuthService = BioWayAuthService();
     }
+    */
+    
+    // Crear instancia dummy para evitar errores
+    _bioWayAuthService = BioWayAuthService();
+    debugPrint('🎨 MODO DISEÑO: Firebase deshabilitado en registro');
   }
 
   @override
@@ -169,6 +177,41 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
       return;
     }
     
+    // MODO DESARROLLO: Registro simulado sin Firebase
+    // TODO: Restaurar código Firebase para producción
+    
+    setState(() => _isLoading = true);
+    
+    // Simular proceso de registro
+    await Future.delayed(const Duration(milliseconds: 1000));
+    
+    if (mounted) {
+      setState(() => _isLoading = false);
+      
+      String userType = _selectedUserType == 'brindador' ? 'Brindador' : 'Recolector';
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 12),
+              Text('🎨 MODO DISEÑO - Registro simulado como $userType'),
+            ],
+          ),
+          backgroundColor: BioWayColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      
+      // Volver a la pantalla de login
+      Navigator.pop(context);
+    }
+    
+    /* CÓDIGO ORIGINAL CON FIREBASE - RESTAURAR PARA PRODUCCIÓN
     setState(() => _isLoading = true);
 
     try {
@@ -256,6 +299,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
         );
       }
     }
+    */
   }
 
   void _nextPage() {

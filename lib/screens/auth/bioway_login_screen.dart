@@ -8,8 +8,10 @@ import '../../../services/bioway/bioway_auth_service.dart';
 import '../../../widgets/login/animated_logo.dart'; // ACTUALIZADA
 import '../platform_selector_screen.dart'; // ACTUALIZADA
 import 'bioway_register_screen.dart'; // ACTUALIZADA
-import '../../bioway/brindador/brindador_main_screen.dart';
-import '../../bioway/recolector/recolector_main_screen.dart';
+import '../brindador/brindador_main_screen.dart';
+import '../recolector/recolector_main_screen.dart';
+import '../maestro/maestro_home_screen.dart';
+import '../centro_acopio/centro_acopio_home_screen.dart';
 
 class BioWayLoginScreen extends StatefulWidget {
   const BioWayLoginScreen({super.key});
@@ -50,6 +52,9 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
   }
 
   Future<void> _initializeFirebase() async {
+    // MODO DESARROLLO: Firebase deshabilitado temporalmente
+    // TODO: Descomentar para producción
+    /*
     try {
       // Inicializar Firebase para BioWay
       await _authService.initializeForPlatform(FirebasePlatform.bioway);
@@ -63,6 +68,11 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
       // Crear la instancia de todos modos para evitar errores
       _bioWayAuthService = BioWayAuthService();
     }
+    */
+    
+    // Crear instancia dummy para evitar errores
+    _bioWayAuthService = BioWayAuthService();
+    debugPrint('🎨 MODO DISEÑO: Firebase deshabilitado');
   }
 
   void _setupAnimations() {
@@ -141,6 +151,63 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
         _isLoading = true;
       });
 
+      // MODO DESARROLLO: Navegación libre sin autenticación
+      // TODO: Descomentar código de Firebase para producción
+      
+      final email = _emailController.text.trim().toLowerCase();
+      
+      // Simular login exitoso y navegar según el email ingresado
+      await Future.delayed(const Duration(milliseconds: 800)); // Simular proceso
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        // Mostrar mensaje de éxito
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Text('🎨 MODO DISEÑO - Navegando a: ${email.contains('recolector') ? 'Recolector' : 'Brindador'}'),
+              ],
+            ),
+            backgroundColor: BioWayColors.success,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(20),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        
+        // Navegación directa según el email (para pruebas de diseño)
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (mounted) {
+          // Si el email contiene "recolector", ir a RecolectorMainScreen
+          // De lo contrario, ir a BrindadorMainScreen
+          if (email.contains('recolector')) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const RecolectorMainScreen(),
+              ),
+            );
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const BrindadorMainScreen(),
+              ),
+            );
+          }
+        }
+      }
+      
+      /* CÓDIGO ORIGINAL CON FIREBASE - RESTAURAR PARA PRODUCCIÓN
       try {
         // Intentar autenticación con Firebase
         final email = _emailController.text.trim();
@@ -199,43 +266,8 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
           }
         }
       } catch (e) {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-
-          String errorMessage = 'Error al iniciar sesión';
-          if (e.toString().contains('user-not-found')) {
-            errorMessage = 'No existe un usuario con este correo';
-          } else if (e.toString().contains('wrong-password')) {
-            errorMessage = 'Contraseña incorrecta';
-          } else if (e.toString().contains('invalid-email')) {
-            errorMessage = 'Correo electrónico inválido';
-          } else if (e.toString().contains('network-request-failed')) {
-            errorMessage = 'Error de conexión. Verifica tu internet';
-          }
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.error, color: Colors.white),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(errorMessage),
-                  ),
-                ],
-              ),
-              backgroundColor: BioWayColors.error,
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.all(20),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
-        }
-      }
+        // Manejo de errores comentado para modo diseño
+        */
     }
   }
 
@@ -733,6 +765,26 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildTempAccessButton(
+                  label: 'Maestro',
+                  icon: Icons.admin_panel_settings,
+                  onTap: _navigateToMaestroDashboard,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildTempAccessButton(
+                  label: 'Centro Acopio',
+                  icon: Icons.warehouse,
+                  onTap: _navigateToCentroAcopioDashboard,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -827,6 +879,56 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
           context,
           MaterialPageRoute(
             builder: (context) => const RecolectorMainScreen(),
+          ),
+        );
+      }
+    });
+  }
+
+  void _navigateToMaestroDashboard() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Accediendo como Maestro/Admin (modo desarrollo)'),
+        backgroundColor: BioWayColors.info,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const MaestroHomeScreen(),
+          ),
+        );
+      }
+    });
+  }
+
+  void _navigateToCentroAcopioDashboard() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Accediendo como Centro de Acopio (modo desarrollo)'),
+        backgroundColor: BioWayColors.info,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const CentroAcopioHomeScreen(),
           ),
         );
       }

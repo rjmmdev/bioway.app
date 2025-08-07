@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "763751005076",
+    "project_id": "bioway-mexico",
+    "storage_bucket": "bioway-mexico.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:763751005076:android:72704ce4a512682d56ed81",
+        "android_client_info": {
+          "package_name": "com.example.bioway_nueva_version"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWhBaGXpQjiFzkQ9XRuvGwEgKJrPWypNY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
