@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../utils/colors.dart';
 import '../../../models/bioway/material_reciclable.dart' as bioway_material;
-import '../../../config/google_maps_config.dart';
 
 class RecolectorMapaScreen extends StatefulWidget {
   const RecolectorMapaScreen({super.key});
@@ -16,96 +16,76 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
   final List<bioway_material.MaterialReciclable> materiales = bioway_material.MaterialReciclable.materiales;
   final Set<String> selectedFilters = {};
   
-  GoogleMapController? _mapController;
-  final Set<Marker> _markers = {};
+  final MapController _mapController = MapController();
   
   // Posición inicial (Ciudad de México)
-  final CameraPosition _initialPosition = const CameraPosition(
-    target: LatLng(GoogleMapsConfig.defaultLatitude, GoogleMapsConfig.defaultLongitude),
-    zoom: GoogleMapsConfig.defaultZoom,
-  );
+  final LatLng _initialPosition = const LatLng(19.4326, -99.1332);
+  final double _initialZoom = 13.0;
+  
+  // Lista de puntos de recolección
+  List<Map<String, dynamic>> puntosRecoleccion = [];
   
   @override
   void initState() {
     super.initState();
-    _loadMarkers();
+    _loadPuntosRecoleccion();
   }
   
-  void _loadMarkers() {
+  void _loadPuntosRecoleccion() {
     // Puntos de recolección simulados
-    final List<Map<String, dynamic>> puntosRecoleccion = [
-      {
-        'id': '1',
-        'lat': 19.4326,
-        'lng': -99.1332,
-        'nombre': 'Centro de Acopio Norte',
-        'direccion': 'Av. Insurgentes Norte 123',
-        'materiales': ['plastico', 'papel', 'vidrio'],
-        'cantidad': 45.5,
-      },
-      {
-        'id': '2',
-        'lat': 19.4280,
-        'lng': -99.1380,
-        'nombre': 'Punto Verde Polanco',
-        'direccion': 'Horacio 234, Polanco',
-        'materiales': ['plastico', 'metal', 'electronico'],
-        'cantidad': 32.0,
-      },
-      {
-        'id': '3',
-        'lat': 19.4360,
-        'lng': -99.1290,
-        'nombre': 'Reciclaje Condesa',
-        'direccion': 'Amsterdam 567, Condesa',
-        'materiales': ['vidrio', 'papel', 'organico'],
-        'cantidad': 28.5,
-      },
-      {
-        'id': '4',
-        'lat': 19.4250,
-        'lng': -99.1350,
-        'nombre': 'EcoPunto Roma',
-        'direccion': 'Álvaro Obregón 890, Roma Norte',
-        'materiales': ['plastico', 'papel', 'metal'],
-        'cantidad': 52.0,
-      },
-      {
-        'id': '5',
-        'lat': 19.4390,
-        'lng': -99.1310,
-        'nombre': 'Centro Comunitario Juárez',
-        'direccion': 'Bucareli 345, Juárez',
-        'materiales': ['organico', 'papel', 'vidrio'],
-        'cantidad': 18.5,
-      },
-    ];
-    
     setState(() {
-      _markers.clear();
-      
-      for (final punto in puntosRecoleccion) {
-        // Filtrar por materiales seleccionados
-        if (selectedFilters.isNotEmpty) {
-          final materialesPunto = List<String>.from(punto['materiales']);
-          final tieneMatSeleccionado = materialesPunto.any((mat) => selectedFilters.contains(mat));
-          if (!tieneMatSeleccionado) continue;
-        }
-        
-        _markers.add(
-          Marker(
-            markerId: MarkerId(punto['id']),
-            position: LatLng(punto['lat'], punto['lng']),
-            infoWindow: InfoWindow(
-              title: punto['nombre'],
-              snippet: '${punto['cantidad']} kg disponibles',
-              onTap: () => _showPuntoDetails(punto),
-            ),
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-          ),
-        );
-      }
+      puntosRecoleccion = [
+        {
+          'id': '1',
+          'position': const LatLng(19.4326, -99.1332),
+          'nombre': 'Centro de Acopio Norte',
+          'direccion': 'Av. Insurgentes Norte 123',
+          'materiales': ['plastico', 'papel', 'vidrio'],
+          'cantidad': 45.5,
+        },
+        {
+          'id': '2',
+          'position': const LatLng(19.4280, -99.1380),
+          'nombre': 'Punto Verde Polanco',
+          'direccion': 'Horacio 234, Polanco',
+          'materiales': ['plastico', 'metal', 'electronico'],
+          'cantidad': 32.0,
+        },
+        {
+          'id': '3',
+          'position': const LatLng(19.4360, -99.1290),
+          'nombre': 'Reciclaje Condesa',
+          'direccion': 'Amsterdam 567, Condesa',
+          'materiales': ['vidrio', 'papel', 'organico'],
+          'cantidad': 28.5,
+        },
+        {
+          'id': '4',
+          'position': const LatLng(19.4250, -99.1350),
+          'nombre': 'EcoPunto Roma',
+          'direccion': 'Álvaro Obregón 890, Roma Norte',
+          'materiales': ['plastico', 'papel', 'metal'],
+          'cantidad': 52.0,
+        },
+        {
+          'id': '5',
+          'position': const LatLng(19.4390, -99.1310),
+          'nombre': 'Centro Comunitario Juárez',
+          'direccion': 'Bucareli 345, Juárez',
+          'materiales': ['organico', 'papel', 'vidrio'],
+          'cantidad': 18.5,
+        },
+      ];
     });
+  }
+  
+  List<Map<String, dynamic>> get filteredPuntos {
+    if (selectedFilters.isEmpty) return puntosRecoleccion;
+    
+    return puntosRecoleccion.where((punto) {
+      final materialesPunto = List<String>.from(punto['materiales']);
+      return materialesPunto.any((mat) => selectedFilters.contains(mat));
+    }).toList();
   }
   
   void _showPuntoDetails(Map<String, dynamic> punto) {
@@ -265,7 +245,16 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    // Aquí iría la navegación o acción de recolección
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Navegando a ${punto['nombre']}'),
+                        backgroundColor: BioWayColors.success,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: BioWayColors.primaryGreen,
@@ -321,6 +310,39 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
         return Icons.recycling;
     }
   }
+  
+  Widget _buildCustomMarker(Map<String, dynamic> punto) {
+    return GestureDetector(
+      onTap: () => _showPuntoDetails(punto),
+      child: Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: BioWayColors.primaryGreen,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white,
+            width: 3,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Center(
+          child: Icon(
+            Icons.recycling,
+            color: Colors.white,
+            size: 24,
+          ),
+        ),
+      ),
+    );
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -328,17 +350,46 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            // Mapa de Google
-            GoogleMap(
-              initialCameraPosition: _initialPosition,
-              onMapCreated: (controller) {
-                _mapController = controller;
-              },
-              markers: _markers,
-              myLocationEnabled: true,
-              myLocationButtonEnabled: false,
-              zoomControlsEnabled: false,
-              mapToolbarEnabled: false,
+            // Mapa de OpenStreetMap
+            FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: _initialPosition,
+                initialZoom: _initialZoom,
+                minZoom: 10,
+                maxZoom: 18,
+                onTap: (tapPosition, point) {
+                  // Opcional: cerrar cualquier popup abierto
+                },
+              ),
+              children: [
+                // Capa de tiles de OpenStreetMap
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.bioway.app',
+                  // Opciones adicionales para mejorar la experiencia
+                  maxZoom: 19,
+                  subdomains: const ['a', 'b', 'c'],
+                ),
+                
+                // Capa de marcadores
+                MarkerLayer(
+                  markers: filteredPuntos.map((punto) {
+                    return Marker(
+                      point: punto['position'],
+                      width: 50,
+                      height: 50,
+                      child: _buildCustomMarker(punto),
+                    );
+                  }).toList(),
+                ),
+                
+                // Atribución de OpenStreetMap (requerida por licencia)
+                const SimpleAttributionWidget(
+                  source: Text('OpenStreetMap contributors'),
+                  backgroundColor: Colors.white,
+                ),
+              ],
             ),
             
             // Header con filtros
@@ -389,7 +440,7 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
                                 ),
                               ),
                               Text(
-                                'Toca un punto verde para ver detalles',
+                                '${filteredPuntos.length} puntos disponibles',
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: BioWayColors.textGrey,
@@ -429,7 +480,7 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
                                   Text(
                                     selectedFilters.isEmpty 
                                         ? 'Mostrando todos los materiales'
-                                        : 'Mostrando: ${_getSelectedMaterialsText()}',
+                                        : 'Filtrado: ${_getSelectedMaterialsText()}',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -461,51 +512,69 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
               ),
             ),
             
-            // Botón de ubicación actual con etiqueta
+            // Botones de control del mapa
             Positioned(
               bottom: 20,
               right: 20,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      'Mi ubicación',
-                      style: TextStyle(
-                        color: BioWayColors.primaryGreen,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
+                  // Botón de zoom in
+                  FloatingActionButton.small(
+                    heroTag: 'zoom_in',
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      final currentZoom = _mapController.camera.zoom;
+                      _mapController.move(
+                        _mapController.camera.center,
+                        currentZoom + 1,
+                      );
+                    },
+                    backgroundColor: Colors.white,
+                    child: Icon(
+                      Icons.add,
+                      color: BioWayColors.primaryGreen,
                     ),
                   ),
                   const SizedBox(height: 8),
+                  // Botón de zoom out
+                  FloatingActionButton.small(
+                    heroTag: 'zoom_out',
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      final currentZoom = _mapController.camera.zoom;
+                      _mapController.move(
+                        _mapController.camera.center,
+                        currentZoom - 1,
+                      );
+                    },
+                    backgroundColor: Colors.white,
+                    child: Icon(
+                      Icons.remove,
+                      color: BioWayColors.primaryGreen,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Botón de ubicación actual
                   FloatingActionButton(
+                    heroTag: 'my_location',
                     onPressed: () async {
                       HapticFeedback.lightImpact();
-                      // Centrar en ubicación actual
-                      if (_mapController != null) {
-                        _mapController!.animateCamera(
-                          CameraUpdate.newLatLngZoom(
-                            const LatLng(
-                              GoogleMapsConfig.defaultLatitude,
-                              GoogleMapsConfig.defaultLongitude,
-                            ),
-                            GoogleMapsConfig.defaultZoom,
+                      // Por ahora solo centra en la posición inicial
+                      // En producción aquí obtendrías la ubicación real del usuario
+                      _mapController.move(_initialPosition, 15);
+                      
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Centrando en tu ubicación'),
+                          backgroundColor: BioWayColors.info,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                        );
-                      }
+                          duration: const Duration(seconds: 1),
+                        ),
+                      );
                     },
                     backgroundColor: BioWayColors.primaryGreen,
                     child: const Icon(
@@ -730,7 +799,6 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
                       selectedFilters.clear();
                       selectedFilters.addAll(tempFilters);
                     });
-                    _loadMarkers();
                     Navigator.of(dialogContext).pop();
                   },
                   style: ElevatedButton.styleFrom(

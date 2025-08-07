@@ -167,27 +167,27 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
             color: canRecycle
                 ? BioWayColors.primaryGreen.withOpacity(0.3)
                 : Colors.black.withOpacity(0.1),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         child: InkWell(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(24),
           onTap: canRecycle ? () => _navigateToResiduos(horario) : null,
           child: Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: screenWidth * 0.06,
-              vertical: 32,
+              horizontal: screenWidth * 0.05,
+              vertical: 20,
             ),
             child: Column(
               children: [
@@ -196,16 +196,16 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           'HOY - ${horario.dia}',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 14,
+                            fontSize: 13,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.5,
                           ),
@@ -213,18 +213,18 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
                   Text(
-                    horario.matinfo,
+                    horario.matinfo ?? '',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 28,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       letterSpacing: -0.5,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Wrap(
                     alignment: WrapAlignment.center,
                     spacing: 8,
@@ -239,7 +239,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            horario.horario,
+                            horario.horario ?? '',
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 14,
@@ -269,7 +269,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                       ),
                     ],
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 20),
                 ],
                 AnimatedBuilder(
                   animation: _scaleAnimation,
@@ -277,7 +277,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                     return Transform.scale(
                       scale: canRecycle ? _scaleAnimation.value : 1.0,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 18),
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(35),
@@ -297,9 +297,9 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                               color: canRecycle
                                   ? BioWayColors.primaryGreen
                                   : Colors.grey,
-                              size: 32,
+                              size: 28,
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(width: 12),
                             Text(
                               canRecycle
                                   ? 'Reciclar ahora'
@@ -307,7 +307,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                                       ? 'Sin recolección hoy'
                                       : 'No disponible',
                               style: TextStyle(
-                                fontSize: 20,
+                                fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: canRecycle
                                     ? BioWayColors.primaryGreen
@@ -347,29 +347,52 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
+          Row(
             children: [
-              Text(
-                "Calendario de Reciclaje",
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: BioWayColors.textDark,
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [BioWayColors.primaryGreen, BioWayColors.darkGreen],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.calendar_today,
+                  color: Colors.white,
+                  size: 20,
                 ),
               ),
-              const SizedBox(height: 5),
-              Text(
-                "Selecciona un día para ver qué materiales se recogen",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Calendario de Reciclaje",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: BioWayColors.textDark,
+                      ),
+                    ),
+                    Text(
+                      "Desliza para ver los próximos días",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Container(
-            height: 100,
+            height: 85,
             child: PageView.builder(
               controller: _pageController,
               itemCount: 3,
@@ -395,8 +418,8 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         margin: EdgeInsets.symmetric(
-          horizontal: isSelected ? 6 : 12,
-          vertical: isSelected ? 0 : 8,
+          horizontal: isSelected ? 5 : 10,
+          vertical: isSelected ? 0 : 6,
         ),
         decoration: BoxDecoration(
           gradient: isSelected
@@ -410,7 +433,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                 )
               : null,
           color: isSelected ? null : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
               color: isSelected
@@ -428,12 +451,12 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: isSelected ? 16 : 14,
+                  fontSize: isSelected ? 15 : 13,
                   fontWeight: FontWeight.bold,
                   color: isSelected ? Colors.white : BioWayColors.textDark,
                 ),
               ),
-              const SizedBox(height: 5),
+              const SizedBox(height: 4),
               if (horario != null)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -444,7 +467,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    horario.dia.substring(0, 3).toUpperCase(),
+                    horario.dia?.substring(0, 3).toUpperCase() ?? '',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -496,7 +519,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      horario.matinfo,
+                      horario.matinfo ?? '',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -517,11 +540,11 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
             ],
           ),
           const SizedBox(height: 20),
-          _buildDetailRow(Icons.schedule, 'Horario', horario.horario),
+          _buildDetailRow(Icons.schedule, 'Horario', horario.horario ?? ''),
           const SizedBox(height: 12),
-          _buildDetailRow(Icons.scale, 'Cantidad mínima', horario.cantidadMinima),
+          _buildDetailRow(Icons.scale, 'Cantidad mínima', horario.cantidadMinima ?? ''),
           const SizedBox(height: 12),
-          _buildDetailRow(Icons.not_interested, 'No se recibe', horario.qnr),
+          _buildDetailRow(Icons.not_interested, 'No se recibe', horario.qnr ?? ''),
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
@@ -707,7 +730,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
       context,
       MaterialPageRoute(
         builder: (context) => BrindadorResiduosGridScreen(
-          selectedCantMin: horario.cantidadMinima,
+          selectedCantMin: horario.cantidadMinima ?? '',
         ),
       ),
     );
