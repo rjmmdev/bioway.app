@@ -5,7 +5,10 @@ import '../../../utils/colors.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
 import '../../../services/bioway/bioway_auth_service.dart';
+import '../../../services/firebase/user_management_service.dart';
 import 'bioway_register_screen.dart';
+import '../temp/admin_register_screen.dart';
+import '../temp/centro_acopio_register_screen.dart';
 import '../brindador/brindador_main_screen.dart';
 import '../recolector/recolector_main_screen.dart';
 import '../maestro/maestro_home_screen.dart';
@@ -42,6 +45,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
   // Instancia del servicio de autenticación
   final AuthService _authService = AuthService();
   late final BioWayAuthService _bioWayAuthService;
+  final UserManagementService _userManagementService = UserManagementService();
 
   @override
   void initState() {
@@ -122,51 +126,112 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
         _isLoading = true;
       });
 
-      final email = _emailController.text.trim().toLowerCase();
-      
-      await Future.delayed(const Duration(milliseconds: 800));
-      
-      if (mounted) {
+      try {
+        final email = _emailController.text.trim().toLowerCase();
+        final password = _passwordController.text;
+        
+        // Intentar autenticación con Firebase
+        final user = await _authService.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+        
+        if (user != null && mounted) {
+          // Obtener datos del usuario desde Firestore
+          final userData = await _userManagementService.getCurrentUser();
+          
+          setState(() {
+            _isLoading = false;
+          });
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Text('Acceso exitoso'),
+                ],
+              ),
+              backgroundColor: BioWayColors.success,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (mounted) {
+            // Navegar según el tipo de usuario
+            final userType = userData?['userType'] ?? 'brindador';
+            switch (userType) {
+              case 'recolector':
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RecolectorMainScreen(),
+                  ),
+                );
+                break;
+              case 'admin':
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MaestroHomeScreen(),
+                  ),
+                );
+                break;
+              case 'centro_acopio':
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CentroAcopioHomeScreen(),
+                  ),
+                );
+                break;
+              default:
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const BrindadorMainScreen(),
+                  ),
+                );
+            }
+          }
+        }
+      } catch (e) {
         setState(() {
           _isLoading = false;
         });
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 12),
-                Text('Acceso exitoso'),
-              ],
-            ),
-            backgroundColor: BioWayColors.success,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(20),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        
-        await Future.delayed(const Duration(milliseconds: 500));
         if (mounted) {
-          if (email.contains('recolector')) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const RecolectorMainScreen(),
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Error de autenticación: ${e.toString()}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
-            );
-          } else {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const BrindadorMainScreen(),
+              backgroundColor: BioWayColors.error,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-            );
-          }
+              duration: const Duration(seconds: 4),
+            ),
+          );
         }
       }
     }
@@ -585,6 +650,11 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
                   // Accesos rápidos (desarrollo)
                   _buildQuickAccess(),
                   
+                  const SizedBox(height: 24),
+                  
+                  // Botones temporales para crear usuarios especiales
+                  _buildTemporaryRegistrationButtons(),
+                  
                   const SizedBox(height: 20),
                 ],
               ),
@@ -690,5 +760,131 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
         );
       }
     });
+  }
+  
+  Widget _buildTemporaryRegistrationButtons() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.orange.withValues(alpha: 0.5),
+          width: 2,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.orange.shade300,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'REGISTRO TEMPORAL (Dev)',
+                style: TextStyle(
+                  color: Colors.orange.shade200,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Crear usuarios especiales para pruebas',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.7),
+              fontSize: 11,
+              fontStyle: FontStyle.italic,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          
+          // Botón Administrador
+          Container(
+            width: double.infinity,
+            height: 48,
+            margin: const EdgeInsets.only(bottom: 12),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        const AdminRegisterScreen(),
+                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      );
+                    },
+                    transitionDuration: const Duration(milliseconds: 300),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.admin_panel_settings, size: 20),
+              label: const Text(
+                'Crear Administrador',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple.withValues(alpha: 0.8),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+              ),
+            ),
+          ),
+          
+          // Botón Centro de Acopio
+          Container(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        const CentroAcopioRegisterScreen(),
+                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      );
+                    },
+                    transitionDuration: const Duration(milliseconds: 300),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.warehouse, size: 20),
+              label: const Text(
+                'Crear Centro de Acopio',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal.withValues(alpha: 0.8),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -22,7 +22,11 @@
       "Bash(flutter analyze:*)",
       "Bash(flutter run:*)",
       "Bash(flutter create:*)",
-      "Bash(flutter build:*)"
+      "Bash(flutter build:*)",
+      "Bash(flutter clean:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(git checkout:*)",
+      "Bash(dir assets*.svg)"
     ],
     "deny": []
   }
