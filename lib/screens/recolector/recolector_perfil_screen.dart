@@ -33,12 +33,14 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
 
   void _initializeMockData() {
     mockUser = BioWayUser(
+      id: 'recolector_123',
       uid: 'recolector_123',
       nombre: 'Carlos Recolector',
       email: 'carlos@recolector.com',
       tipoUsuario: 'recolector',
       bioCoins: 2500,
-      nivel: BioWayLevels.getLevelByCO2(250.8),
+      nivel: BioWayLevels.calculateLevel(2500),
+      nivelNombre: BioWayLevels.getLevelInfo(BioWayLevels.calculateLevel(2500)).nombre,
       fechaRegistro: DateTime.now().subtract(const Duration(days: 60)),
       direccion: 'Calle Principal 789',
       numeroExterior: '789',
@@ -46,12 +48,9 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
       estado: 'Ciudad de México',
       municipio: 'Benito Juárez',
       colonia: 'Del Valle',
-      totalResiduosRecolectados: 45,
+      totalResiduosBrindados: 45,
       totalKgReciclados: 120.5,
       totalCO2Evitado: 250.8,
-      vehiculo: 'Camioneta Nissan NP300',
-      capacidadKg: 500.0,
-      licenciaConducir: 'CDMX123456789',
     );
   }
 
@@ -185,7 +184,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
               ),
               _buildStatItem(
                 icon: Icons.emoji_events,
-                value: mockUser.nivel,
+                value: mockUser.nivelNombre,
                 label: 'Nivel',
                 iconColor: Colors.white,
               ),

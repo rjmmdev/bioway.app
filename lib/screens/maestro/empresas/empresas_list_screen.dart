@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // import 'package:cloud_firestore/cloud_firestore.dart'; // TODO: Descomentar para producción
 import '../../../utils/colors.dart';
+import '../../../models/bioway/empresa_model.dart';
 import 'empresa_form_screen.dart';
 
 class EmpresasListScreen extends StatefulWidget {
@@ -738,7 +739,7 @@ class _EmpresasListScreenState extends State<EmpresasListScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EmpresaFormScreen(empresa: empresa),
+        builder: (context) => EmpresaFormScreen(empresa: EmpresaModel.fromMap(empresa)),
       ),
     );
   }

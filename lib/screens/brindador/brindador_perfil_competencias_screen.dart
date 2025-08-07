@@ -55,12 +55,13 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
 
   void _initializeMockData() {
     mockUser = BioWayUser(
+      id: 'mock_123',
       uid: 'mock_123',
       nombre: 'Juan Pérez',
       email: 'juan@example.com',
       tipoUsuario: 'brindador',
       bioCoins: 15780,
-      nivel: 'Oro', // Nivel actualizado
+      nivelNombre: 'Oro', // Nivel actualizado
       fechaRegistro: DateTime.now().subtract(const Duration(days: 180)),
       direccion: 'Av. Insurgentes Sur 123',
       numeroExterior: '456',
@@ -144,7 +145,6 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
           ),
           if (_showCelebration)
             BioCelebrationWidget(
-              title: '¡Felicidades!',
               message: '¡Nuevo logro desbloqueado!',
               onComplete: () {
                 setState(() {
@@ -198,19 +198,19 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: _getLevelColor(mockUser.nivel),
+              color: _getLevelColor(mockUser.nivelNombre),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               children: [
                 Icon(
-                  _getLevelIcon(mockUser.nivel),
+                  _getLevelIcon(mockUser.nivelNombre),
                   color: Colors.white,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  mockUser.nivel,
+                  mockUser.nivelNombre,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -614,7 +614,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
           ),
           const SizedBox(height: 16),
           ...materialesReciclados.entries.map((entry) {
-            final material = MaterialReciclable.findById(entry.key);
+            final material = MaterialReciclable.getById(entry.key);
             final percentage = (entry.value / totalKg * 100);
             
             return Container(

@@ -167,7 +167,7 @@ class _BrindadorResiduosGridScreenState extends State<BrindadorResiduosGridScree
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${material.puntosPerKg} pts/kg',
+                            '5 pts/kg', // Valor por defecto ya que puntosPerKg no existe
                             style: TextStyle(
                               fontSize: 12,
                               color: isSelected 

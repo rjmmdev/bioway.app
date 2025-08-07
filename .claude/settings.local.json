@@ -17,7 +17,12 @@
       "Bash(firebase:*)",
       "Bash(dart pub global activate:*)",
       "Bash(flutterfire configure:*)",
-      "Bash(dart pub global run flutterfire_cli:flutterfire configure:*)"
+      "Bash(dart pub global run flutterfire_cli:flutterfire configure:*)",
+      "Bash(flutter pub:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(flutter run:*)",
+      "Bash(flutter create:*)",
+      "Bash(flutter build:*)"
     ],
     "deny": []
   }

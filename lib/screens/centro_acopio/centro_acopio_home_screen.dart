@@ -314,7 +314,10 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const PrepagoScreen(),
+                          builder: (context) => PrepagoScreen(
+                            centroAcopioId: _centroAcopio['id'] ?? 'CA001',
+                            saldoActual: _centroAcopio['saldoPrepago']?.toDouble() ?? 0.0,
+                          ),
                         ),
                       );
                     },
@@ -416,25 +419,35 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
         'title': 'Recepción',
         'icon': Icons.inbox,
         'color': BioWayColors.primaryGreen,
-        'screen': const RecepcionMaterialScreen(),
+        'screen': RecepcionMaterialScreen(
+          qrCode: 'QR_${DateTime.now().millisecondsSinceEpoch}',
+          centroAcopioId: _centroAcopio['id'] ?? 'CA001',
+        ),
       },
       {
         'title': 'Inventario',
         'icon': Icons.inventory_2,
         'color': BioWayColors.info,
-        'screen': const InventarioScreen(),
+        'screen': InventarioScreen(
+          centroAcopioId: _centroAcopio['id'] ?? 'CA001',
+        ),
       },
       {
         'title': 'Reportes',
         'icon': Icons.analytics,
         'color': BioWayColors.warning,
-        'screen': const ReportesScreen(),
+        'screen': ReportesScreen(
+          centroAcopioId: _centroAcopio['id'] ?? 'CA001',
+        ),
       },
       {
         'title': 'Prepago',
         'icon': Icons.account_balance_wallet,
         'color': BioWayColors.success,
-        'screen': const PrepagoScreen(),
+        'screen': PrepagoScreen(
+          centroAcopioId: _centroAcopio['id'] ?? 'CA001',
+          saldoActual: _centroAcopio['saldoPrepago']?.toDouble() ?? 0.0,
+        ),
       },
     ];
 
@@ -663,7 +676,10 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const RecepcionMaterialScreen(),
+                      builder: (context) => RecepcionMaterialScreen(
+                        qrCode: 'QR_${DateTime.now().millisecondsSinceEpoch}',
+                        centroAcopioId: _centroAcopio['id'] ?? 'CA001',
+                      ),
                     ),
                   );
                 },
