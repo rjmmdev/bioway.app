@@ -37,7 +37,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  // Campos para Ciudadano (Brindador)
+  // Campos para Brindador
   final _addressController = TextEditingController();
   final _cpController = TextEditingController();
   final _stateController = TextEditingController();
@@ -146,7 +146,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
         _animateToPage(2);
       }
     } else if (_currentPage == 2) {
-      if (_selectedUserType == 'ciudadano') {
+      if (_selectedUserType == 'brindador') {
         if (_formKeyStep2.currentState?.validate() ?? false) {
           _handleRegister();
         }
@@ -201,7 +201,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
             children: [
               const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 12),
-              Text('Registro exitoso como ${_selectedUserType == 'ciudadano' ? 'Ciudadano' : 'Recolector'}'),
+              Text('Registro exitoso como ${_selectedUserType == 'brindador' ? 'Brindador' : 'Recolector'}'),
             ],
           ),
           backgroundColor: BioWayColors.success,
@@ -266,8 +266,8 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                   children: [
                     _buildUserTypeStep(),
                     _buildBasicInfoStep(),
-                    _selectedUserType == 'ciudadano'
-                        ? _buildCiudadanoStep()
+                    _selectedUserType == 'brindador'
+                        ? _buildBrindadorStep()
                         : _buildRecolectorStep(),
                   ],
                 ),
@@ -414,11 +414,11 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                   
                   _buildUserTypeCard(
                     icon: Icons.home,
-                    title: 'Ciudadano',
+                    title: 'Brindador',
                     subtitle: 'Recicla desde casa',
                     description: 'Separa residuos, agenda recolecciones y gana recompensas',
-                    value: 'ciudadano',
-                    isSelected: _selectedUserType == 'ciudadano',
+                    value: 'brindador',
+                    isSelected: _selectedUserType == 'brindador',
                   ),
                   
                   const SizedBox(height: 20),
@@ -724,7 +724,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
     );
   }
 
-  Widget _buildCiudadanoStep() {
+  Widget _buildBrindadorStep() {
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, child) {

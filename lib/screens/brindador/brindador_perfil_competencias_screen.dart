@@ -170,7 +170,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                   style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Color(0xFF1A1A1A),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -351,6 +351,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                 value: mockUser.bioCoins.toString(),
                 label: 'BioCoins',
                 isLight: true,
+                isGold: true,
               ),
               Container(
                 width: 1,
@@ -362,6 +363,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                 value: '#${_miCompetencia?.posicionRanking ?? '-'}',
                 label: 'Ranking',
                 isLight: true,
+                isTrophy: true,
               ),
             ],
           ),
@@ -369,15 +371,33 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.white.withOpacity(0.9),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.3),
+                width: 1,
+              ),
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.local_fire_department,
-                  color: const Color(0xFF00553F),
-                  size: 24,
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFFFF6B35), // Orange
+                        const Color(0xFFFF9558), // Light orange
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    Icons.local_fire_department,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -432,14 +452,45 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
     required String value,
     required String label,
     bool isLight = false,
+    bool isGold = false,
+    bool isTrophy = false,
   }) {
     return Expanded(
       child: Column(
         children: [
-          Icon(
-            icon,
-            color: isLight ? const Color(0xFF00553F) : BioWayColors.navGreen,
-            size: 24,
+          Container(
+            decoration: BoxDecoration(
+              gradient: isGold ? LinearGradient(
+                colors: [
+                  const Color(0xFFFFD700), // Gold
+                  const Color(0xFFFFA500), // Orange gold
+                  const Color(0xFFFFD700), // Gold
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ) : isTrophy ? LinearGradient(
+                colors: [
+                  const Color(0xFFFF6B35), // Orange red
+                  const Color(0xFFF72585), // Pink
+                  const Color(0xFF7209B7), // Purple
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ) : null,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: (isGold || isTrophy) ? Colors.white : (isLight ? const Color(0xFF00553F) : BioWayColors.navGreen),
+              size: 24,
+              shadows: (isGold || isTrophy) ? [
+                Shadow(
+                  color: Colors.black.withOpacity(0.3),
+                  offset: const Offset(1, 1),
+                  blurRadius: 2,
+                ),
+              ] : null,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -479,12 +530,12 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Tu Impacto Total',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: BioWayColors.textDark,
             ),
           ),
           const SizedBox(height: 16),

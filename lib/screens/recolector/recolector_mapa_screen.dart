@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../utils/colors.dart';
 import '../../../models/bioway/material_reciclable.dart' as bioway_material;
@@ -32,7 +33,7 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
   }
   
   void _loadPuntosRecoleccion() {
-    // Puntos de recolección simulados con IDs de materiales válidos
+    // Puntos de recolección simulados con IDs de materiales válidos - 25 puntos
     setState(() {
       puntosRecoleccion = [
         {
@@ -75,6 +76,166 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
           'materiales': ['carton', 'papel', 'vidrio'],
           'cantidad': 18.5,
         },
+        {
+          'id': '6',
+          'position': const LatLng(19.4410, -99.1450),
+          'nombre': 'Punto Limpio Anzures',
+          'direccion': 'Mariano Escobedo 456, Anzures',
+          'materiales': ['pet_tipo1', 'hdpe', 'papel'],
+          'cantidad': 37.2,
+        },
+        {
+          'id': '7',
+          'position': const LatLng(19.4195, -99.1420),
+          'nombre': 'Centro Verde Nápoles',
+          'direccion': 'Dakota 789, Nápoles',
+          'materiales': ['vidrio', 'metal', 'carton'],
+          'cantidad': 41.8,
+        },
+        {
+          'id': '8',
+          'position': const LatLng(19.4450, -99.1280),
+          'nombre': 'Recicladora San Rafael',
+          'direccion': 'Ribera de San Cosme 234, San Rafael',
+          'materiales': ['papel', 'carton', 'pet_tipo1'],
+          'cantidad': 29.3,
+        },
+        {
+          'id': '9',
+          'position': const LatLng(19.4150, -99.1380),
+          'nombre': 'Punto Ecológico Del Valle',
+          'direccion': 'Félix Cuevas 567, Del Valle',
+          'materiales': ['hdpe', 'vidrio', 'metal'],
+          'cantidad': 55.7,
+        },
+        {
+          'id': '10',
+          'position': const LatLng(19.4380, -99.1520),
+          'nombre': 'Centro de Acopio Tacubaya',
+          'direccion': 'Parque Lira 890, Tacubaya',
+          'materiales': ['pet_tipo1', 'papel', 'metal'],
+          'cantidad': 33.9,
+        },
+        {
+          'id': '11',
+          'position': const LatLng(19.4220, -99.1250),
+          'nombre': 'Reciclaje Doctores',
+          'direccion': 'Dr. Lavista 123, Doctores',
+          'materiales': ['carton', 'vidrio', 'hdpe'],
+          'cantidad': 24.6,
+        },
+        {
+          'id': '12',
+          'position': const LatLng(19.4480, -99.1400),
+          'nombre': 'Punto Verde Santa María',
+          'direccion': 'Sabino 456, Santa María la Ribera',
+          'materiales': ['papel', 'pet_tipo1', 'metal'],
+          'cantidad': 47.3,
+        },
+        {
+          'id': '13',
+          'position': const LatLng(19.4100, -99.1450),
+          'nombre': 'Centro Ecológico Coyoacán',
+          'direccion': 'Miguel Ángel de Quevedo 789, Coyoacán',
+          'materiales': ['vidrio', 'carton', 'papel'],
+          'cantidad': 39.8,
+        },
+        {
+          'id': '14',
+          'position': const LatLng(19.4340, -99.1180),
+          'nombre': 'Recicladora Obrera',
+          'direccion': 'José T. Cuéllar 234, Obrera',
+          'materiales': ['hdpe', 'pet_tipo1', 'metal'],
+          'cantidad': 26.1,
+        },
+        {
+          'id': '15',
+          'position': const LatLng(19.4290, -99.1550),
+          'nombre': 'Punto Limpio San Miguel',
+          'direccion': 'Gobernador Melchor 567, San Miguel Chapultepec',
+          'materiales': ['papel', 'vidrio', 'carton'],
+          'cantidad': 51.4,
+        },
+        {
+          'id': '16',
+          'position': const LatLng(19.4420, -99.1350),
+          'nombre': 'Centro Verde Guerrero',
+          'direccion': 'Zarco 890, Guerrero',
+          'materiales': ['metal', 'hdpe', 'pet_tipo1'],
+          'cantidad': 35.7,
+        },
+        {
+          'id': '17',
+          'position': const LatLng(19.4170, -99.1480),
+          'nombre': 'Reciclaje Escandón',
+          'direccion': 'Patriotismo 123, Escandón',
+          'materiales': ['carton', 'papel', 'vidrio'],
+          'cantidad': 42.9,
+        },
+        {
+          'id': '18',
+          'position': const LatLng(19.4510, -99.1320),
+          'nombre': 'Punto Ecológico Peralvillo',
+          'direccion': 'Calzada de Guadalupe 456, Peralvillo',
+          'materiales': ['pet_tipo1', 'metal', 'hdpe'],
+          'cantidad': 28.3,
+        },
+        {
+          'id': '19',
+          'position': const LatLng(19.4050, -99.1400),
+          'nombre': 'Centro de Acopio Portales',
+          'direccion': 'Municipio Libre 789, Portales',
+          'materiales': ['vidrio', 'papel', 'carton'],
+          'cantidad': 36.5,
+        },
+        {
+          'id': '20',
+          'position': const LatLng(19.4370, -99.1600),
+          'nombre': 'Recicladora Bosques',
+          'direccion': 'Bosques de Duraznos 234, Bosques de las Lomas',
+          'materiales': ['hdpe', 'pet_tipo1', 'papel'],
+          'cantidad': 58.2,
+        },
+        {
+          'id': '21',
+          'position': const LatLng(19.4260, -99.1200),
+          'nombre': 'Punto Verde Centro',
+          'direccion': '5 de Mayo 567, Centro Histórico',
+          'materiales': ['metal', 'vidrio', 'carton'],
+          'cantidad': 44.7,
+        },
+        {
+          'id': '22',
+          'position': const LatLng(19.4460, -99.1480),
+          'nombre': 'Centro Ecológico Cuauhtémoc',
+          'direccion': 'Río Lerma 890, Cuauhtémoc',
+          'materiales': ['papel', 'pet_tipo1', 'hdpe'],
+          'cantidad': 31.9,
+        },
+        {
+          'id': '23',
+          'position': const LatLng(19.4120, -99.1320),
+          'nombre': 'Reciclaje Benito Juárez',
+          'direccion': 'División del Norte 123, Benito Juárez',
+          'materiales': ['vidrio', 'metal', 'papel'],
+          'cantidad': 40.3,
+        },
+        {
+          'id': '24',
+          'position': const LatLng(19.4400, -99.1230),
+          'nombre': 'Punto Limpio Tabacalera',
+          'direccion': 'Paseo de la Reforma 456, Tabacalera',
+          'materiales': ['carton', 'hdpe', 'pet_tipo1'],
+          'cantidad': 49.6,
+        },
+        {
+          'id': '25',
+          'position': const LatLng(19.4200, -99.1500),
+          'nombre': 'Centro Verde Mixcoac',
+          'direccion': 'Revolución 789, Mixcoac',
+          'materiales': ['papel', 'vidrio', 'metal'],
+          'cantidad': 34.8,
+        },
       ];
     });
   }
@@ -91,16 +252,25 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
   void _showPuntoDetails(Map<String, dynamic> punto) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        return DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              padding: const EdgeInsets.all(24),
+              child: SingleChildScrollView(
+                controller: scrollController,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
               // Header con icono
               Row(
                 children: [
@@ -299,30 +469,22 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.directions_car,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Ir a Recolectar',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    'Ir a Recolectar',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
-            ],
-          ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -371,10 +533,11 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
           ],
         ),
         child: Center(
-          child: Icon(
-            Icons.recycling,
-            color: Colors.white,
-            size: 24,
+          child: SvgPicture.asset(
+            'assets/logos/bioway_logo.svg',
+            width: 24,
+            height: 24,
+            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
           ),
         ),
       ),

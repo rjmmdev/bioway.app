@@ -9,6 +9,9 @@ class BioWayColors {
 
   /// Verde principal de la marca BioWay - desde background_1.xml
   static const Color primaryGreen = Color(0xFF70D997);
+  
+  /// Verde para elementos no degradados (nav bar, etc)
+  static const Color navGreen = Color(0xFF74D15F);
 
   /// Verde oscuro para textos y elementos destacados - desde background_1.xml
   static const Color darkGreen = Color(0xFF3DB388);
@@ -86,6 +89,20 @@ class BioWayColors {
     Color(0xFF3FD9FF), // Turquesa brillante
     Color(0xFFC3FACC), // Verde agua pastel
     Color(0xFF90EE80), // Verde lime
+  ];
+
+  /// Gradiente suave para fondos - versión difuminada para mejor legibilidad
+  static List<Color> backgroundGradientSoft = [
+    const Color(0xFF74EF8C), // Verde claro
+    const Color(0xFFB1FBD3), // Verde intermedio
+    const Color(0xFF00DFFE), // Azul turquesa
+  ];
+
+  /// Gradiente muy suave para fondos - máxima legibilidad
+  static List<Color> backgroundGradientUltraSoft = [
+    const Color(0xFF90EE80).withOpacity(0.15), // Verde lime muy suave
+    const Color(0xFFC3FACC).withOpacity(0.12), // Verde agua pastel muy suave
+    const Color(0xFF3FD9FF).withOpacity(0.1), // Turquesa brillante muy suave
   ];
 
   /// Gradiente cálido - desde background_3.xml

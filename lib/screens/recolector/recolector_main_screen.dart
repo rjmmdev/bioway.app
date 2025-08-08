@@ -112,14 +112,14 @@ class _RecolectorMainScreenState extends State<RecolectorMainScreen> {
                 padding: EdgeInsets.all(isSelected ? 8 : 6),
                 decoration: BoxDecoration(
                   color: isSelected 
-                      ? BioWayColors.primaryGreen.withOpacity(0.1)
+                      ? BioWayColors.navGreen.withOpacity(0.1)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   icon,
                   color: isSelected 
-                      ? BioWayColors.primaryGreen 
+                      ? BioWayColors.navGreen 
                       : Colors.grey.shade400,
                   size: isSelected ? 28 : 24,
                 ),
@@ -131,7 +131,7 @@ class _RecolectorMainScreenState extends State<RecolectorMainScreen> {
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   color: isSelected 
-                      ? BioWayColors.primaryGreen 
+                      ? BioWayColors.navGreen 
                       : Colors.grey.shade400,
                 ),
               ),

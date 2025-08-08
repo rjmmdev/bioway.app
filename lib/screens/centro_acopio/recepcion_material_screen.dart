@@ -220,7 +220,7 @@ class _RecepcionMaterialScreenState extends State<RecepcionMaterialScreen> {
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(
-          backgroundColor: BioWayColors.primaryGreen,
+          backgroundColor: BioWayColors.navGreen,
           title: const Text('Recepción de Material'),
         ),
         body: const Center(
@@ -232,7 +232,7 @@ class _RecepcionMaterialScreenState extends State<RecepcionMaterialScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: BioWayColors.primaryGreen,
+        backgroundColor: BioWayColors.navGreen,
         title: const Text(
           'Recepción de Material',
           style: TextStyle(color: Colors.white),
@@ -396,10 +396,10 @@ class _RecepcionMaterialScreenState extends State<RecepcionMaterialScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: BioWayColors.primaryGreen.withOpacity(0.1),
+                    color: BioWayColors.navGreen.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: BioWayColors.primaryGreen.withOpacity(0.3),
+                      color: BioWayColors.navGreen.withOpacity(0.3),
                     ),
                   ),
                   child: Column(
@@ -416,7 +416,7 @@ class _RecepcionMaterialScreenState extends State<RecepcionMaterialScreen> {
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: BioWayColors.primaryGreen,
+                              color: BioWayColors.navGreen,
                             ),
                           ),
                         ],
@@ -433,7 +433,7 @@ class _RecepcionMaterialScreenState extends State<RecepcionMaterialScreen> {
                   child: ElevatedButton(
                     onPressed: _procesarRecepcion,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: BioWayColors.primaryGreen,
+                      backgroundColor: BioWayColors.navGreen,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(25),
                       ),

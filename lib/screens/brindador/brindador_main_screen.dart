@@ -16,6 +16,7 @@ class BrindadorMainScreen extends StatefulWidget {
 class _BrindadorMainScreenState extends State<BrindadorMainScreen> {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
+  bool _isNavigating = false;
 
   @override
   void dispose() {
@@ -24,20 +25,25 @@ class _BrindadorMainScreenState extends State<BrindadorMainScreen> {
   }
 
   void _onNavItemTapped(int index) {
-    if (index == _currentIndex) return;
+    if (index == _currentIndex || _isNavigating) return;
     
     HapticFeedback.lightImpact();
     
+    _isNavigating = true;
+    
+    // Actualizar el índice inmediatamente para respuesta visual rápida
     setState(() {
       _currentIndex = index;
     });
     
-    // Animación suave entre páginas
+    // Navegar a la página con animación
     _pageController.animateToPage(
       index,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOutCubic,
-    );
+    ).then((_) {
+      _isNavigating = false;
+    });
   }
 
   @override
@@ -45,11 +51,6 @@ class _BrindadorMainScreenState extends State<BrindadorMainScreen> {
     return Scaffold(
       body: PageView(
         controller: _pageController,
-        onPageChanged: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
         physics: const NeverScrollableScrollPhysics(), // Deshabilitamos el swipe manual
         children: const [
           BrindadorDashboardScreen(),

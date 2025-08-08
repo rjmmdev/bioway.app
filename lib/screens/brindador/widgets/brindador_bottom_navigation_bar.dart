@@ -66,7 +66,7 @@ class BrindadorBottomNavigationBar extends StatelessWidget {
     required bool isSelected,
     bool isSvg = false,
   }) {
-    final color = isSelected ? BioWayColors.primaryGreen : Colors.grey.shade600;
+    final color = isSelected ? BioWayColors.navGreen : Colors.grey.shade600;
     
     return Expanded(
       child: GestureDetector(
@@ -74,7 +74,7 @@ class BrindadorBottomNavigationBar extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         child: Container(
           decoration: BoxDecoration(
-            color: isSelected ? BioWayColors.primaryGreen.withOpacity(0.1) : Colors.transparent,
+            color: isSelected ? BioWayColors.navGreen.withOpacity(0.1) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(

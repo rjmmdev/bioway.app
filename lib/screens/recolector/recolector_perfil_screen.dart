@@ -104,7 +104,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
             style: const TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF00553F),
+              color: Color(0xFF1A1A1A),
             ),
           ),
           const SizedBox(height: 8),

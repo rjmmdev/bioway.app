@@ -62,7 +62,10 @@ class FirebaseManager {
   }) {
     Query<Map<String, dynamic>> query = firestore.collection(collection);
     if (queryBuilder != null) {
-      query = queryBuilder(query);
+      final modifiedQuery = queryBuilder(query);
+      if (modifiedQuery != null) {
+        query = modifiedQuery;
+      }
     }
     return query.snapshots();
   }

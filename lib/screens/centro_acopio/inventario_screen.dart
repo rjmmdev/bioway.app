@@ -14,7 +14,7 @@ class InventarioScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: BioWayColors.primaryGreen,
+        backgroundColor: BioWayColors.navGreen,
         title: const Text(
           'Inventario',
           style: TextStyle(color: Colors.white),

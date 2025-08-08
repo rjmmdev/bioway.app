@@ -621,7 +621,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
             spacing: 8,
             runSpacing: 8,
             children: [
-              _buildQuickButton('Ciudadano', Icons.person, _navigateToBrindador),
+              _buildQuickButton('Brindador', Icons.person, _navigateToBrindador),
               _buildQuickButton('Recolector', Icons.local_shipping, _navigateToRecolector),
               _buildQuickButton('Admin', Icons.admin_panel_settings, _navigateToMaestro),
               _buildQuickButton('Centro', Icons.warehouse, _navigateToCentro),
@@ -664,7 +664,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
     );
   }
 
-  void _navigateToBrindador() => _quickNavigate(const BrindadorMainScreen(), 'Ciudadano');
+  void _navigateToBrindador() => _quickNavigate(const BrindadorMainScreen(), 'Brindador');
   void _navigateToRecolector() => _quickNavigate(const RecolectorMainScreen(), 'Recolector');
   void _navigateToMaestro() => _quickNavigate(const MaestroHomeScreen(), 'Administrador');
   void _navigateToCentro() => _quickNavigate(const CentroAcopioHomeScreen(), 'Centro de Acopio');

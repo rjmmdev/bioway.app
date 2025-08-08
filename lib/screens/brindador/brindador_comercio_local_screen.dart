@@ -415,7 +415,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: Color(0xFF007460),
             ),
           ),
           const SizedBox(height: 12),
@@ -532,7 +532,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Color(0xFF007460),
                   ),
                 ),
                 TextButton(
@@ -621,7 +621,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: Color(0xFF2C3E50),
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -650,10 +650,10 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                         children: [
                           Text(
                             '${producto.bioCoinsCosto} BioCoins',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: BioWayColors.navGreen,
                             ),
                           ),
                           Text(
@@ -826,7 +826,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        color: Color(0xFF2C3E50),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -981,7 +981,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: Color(0xFF2C3E50),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -1057,7 +1057,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: Color(0xFF2C3E50),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1185,7 +1185,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                         style: const TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: Color(0xFF2C3E50),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -1216,7 +1216,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: Colors.white,
+                              color: Color(0xFF2C3E50),
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -1431,7 +1431,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Color(0xFF2C3E50),
                 ),
               ),
               const SizedBox(height: 8),
@@ -1471,10 +1471,10 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                   children: [
                     Text(
                       producto.nombre,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: BioWayColors.navGreen,
                       ),
                     ),
                     const SizedBox(height: 4),

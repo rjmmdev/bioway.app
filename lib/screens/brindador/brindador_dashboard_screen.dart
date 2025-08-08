@@ -126,14 +126,14 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: BioWayColors.primaryGreen.withOpacity(0.1),
+              color: BioWayColors.navGreen.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
                 Icon(
                   Icons.monetization_on,
-                  color: BioWayColors.primaryGreen,
+                  color: BioWayColors.navGreen,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
@@ -142,7 +142,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: BioWayColors.primaryGreen,
+                    color: BioWayColors.navGreen,
                   ),
                 ),
               ],
@@ -162,8 +162,8 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: canRecycle
-              ? [BioWayColors.primaryGreen, BioWayColors.primaryGreen.withOpacity(0.8)]
-              : [Colors.grey[400]!, Colors.grey[500]!],
+              ? BioWayColors.backgroundGradientSoft
+              : [Colors.grey[400]!.withOpacity(0.3), Colors.grey[500]!.withOpacity(0.3)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -204,7 +204,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                         child: Text(
                           'HOY - ${horario.dia}',
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: Color(0xFF00553F),
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.5,
@@ -217,7 +217,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                   Text(
                     horario.matinfo ?? '',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFF00553F),
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       letterSpacing: -0.5,
@@ -232,16 +232,16 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.schedule,
-                            color: Colors.white70,
+                            color: Color(0xFF00553F),
                             size: 16,
                           ),
                           const SizedBox(width: 6),
                           Text(
                             horario.horario ?? '',
                             style: const TextStyle(
-                              color: Colors.white70,
+                              color: Color(0xFF00553F),
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                             ),
@@ -251,16 +251,16 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.scale,
-                            color: Colors.white70,
+                            color: Color(0xFF00553F),
                             size: 16,
                           ),
                           const SizedBox(width: 6),
                           Text(
                             'Mín: ${horario.cantidadMinima}',
                             style: const TextStyle(
-                              color: Colors.white70,
+                              color: Color(0xFF00553F),
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                             ),
@@ -295,7 +295,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                             Icon(
                               Icons.recycling,
                               color: canRecycle
-                                  ? BioWayColors.primaryGreen
+                                  ? BioWayColors.navGreen
                                   : Colors.grey,
                               size: 28,
                             ),
@@ -310,7 +310,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: canRecycle
-                                    ? BioWayColors.primaryGreen
+                                    ? BioWayColors.navGreen
                                     : Colors.grey,
                                 letterSpacing: -0.5,
                               ),
@@ -323,10 +323,10 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                 ),
                 if (!canRecycle && horario == null) ...[
                   const SizedBox(height: 16),
-                  Text(
+                  const Text(
                     'Revisa el calendario para próximas recolecciones',
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: Color(0xFF00553F),
                       fontSize: 14,
                     ),
                   ),
@@ -345,50 +345,23 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
     return Container(
       margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [BioWayColors.primaryGreen, BioWayColors.darkGreen],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.calendar_today,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Calendario de Reciclaje",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: BioWayColors.textDark,
-                      ),
-                    ),
-                    Text(
-                      "Desliza para ver los próximos días",
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          Text(
+            "Calendario de Reciclaje",
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: BioWayColors.textDark,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "Desliza para ver los próximos días",
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey[600],
+            ),
           ),
           const SizedBox(height: 16),
           Container(
@@ -424,10 +397,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
         decoration: BoxDecoration(
           gradient: isSelected
               ? LinearGradient(
-                  colors: [
-                    BioWayColors.primaryGreen,
-                    BioWayColors.darkGreen,
-                  ],
+                  colors: BioWayColors.backgroundGradientSoft,
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 )
@@ -453,7 +423,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                 style: TextStyle(
                   fontSize: isSelected ? 15 : 13,
                   fontWeight: FontWeight.bold,
-                  color: isSelected ? Colors.white : BioWayColors.textDark,
+                  color: isSelected ? const Color(0xFF00553F) : BioWayColors.textDark,
                 ),
               ),
               const SizedBox(height: 4),
@@ -463,7 +433,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                   decoration: BoxDecoration(
                     color: isSelected
                         ? Colors.white.withOpacity(0.2)
-                        : BioWayColors.primaryGreen.withOpacity(0.1),
+                        : BioWayColors.navGreen.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -471,7 +441,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.white : BioWayColors.primaryGreen,
+                      color: isSelected ? const Color(0xFF00553F) : BioWayColors.navGreen,
                     ),
                   ),
                 ),
@@ -504,12 +474,12 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: BioWayColors.primaryGreen.withOpacity(0.1),
+                  color: BioWayColors.navGreen.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.recycling,
-                  color: BioWayColors.primaryGreen,
+                  color: BioWayColors.navGreen,
                   size: 24,
                 ),
               ),
@@ -552,19 +522,19 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
               onPressed: _openMoreInfo,
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                side: BorderSide(color: BioWayColors.primaryGreen),
+                side: BorderSide(color: BioWayColors.navGreen),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
               icon: Icon(
                 Icons.info_outline,
-                color: BioWayColors.primaryGreen,
+                color: BioWayColors.navGreen,
               ),
               label: Text(
                 'Más información',
                 style: TextStyle(
-                  color: BioWayColors.primaryGreen,
+                  color: BioWayColors.navGreen,
                   fontWeight: FontWeight.w600,
                 ),
               ),

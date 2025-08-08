@@ -106,7 +106,7 @@ class _EmpresaFormScreenState extends State<EmpresaFormScreen> {
             ? double.tryParse(_rangoKmController.text) 
             : null,
         'activa': true,
-        'fechaCreacion': widget.empresa?.fechaCreacion.toIso8601String() ?? 
+        'fechaCreacion': widget.empresa?.fechaCreacion?.toIso8601String() ?? 
             DateTime.now().toIso8601String(),
         'fechaActualizacion': DateTime.now().toIso8601String(),
       };
@@ -155,7 +155,7 @@ class _EmpresaFormScreenState extends State<EmpresaFormScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: BioWayColors.primaryGreen,
+        backgroundColor: BioWayColors.navGreen,
         title: Text(
           widget.empresa != null ? 'Editar Empresa' : 'Nueva Empresa',
           style: const TextStyle(color: Colors.white),
@@ -277,7 +277,7 @@ class _EmpresaFormScreenState extends State<EmpresaFormScreen> {
                                       }
                                     });
                                   },
-                                  selectedColor: BioWayColors.primaryGreen
+                                  selectedColor: BioWayColors.navGreen
                                       .withValues(alpha: 0.3),
                                 );
                               }).toList(),
@@ -335,7 +335,7 @@ class _EmpresaFormScreenState extends State<EmpresaFormScreen> {
                         child: ElevatedButton(
                           onPressed: _saveEmpresa,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: BioWayColors.primaryGreen,
+                            backgroundColor: BioWayColors.navGreen,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(25),
                             ),
