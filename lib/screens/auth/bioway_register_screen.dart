@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
 import '../../../services/bioway/bioway_auth_service.dart';
 import '../../../services/firebase/auth_service.dart';
+import '../../../services/firebase/user_management_service.dart';
 
 class BioWayRegisterScreen extends StatefulWidget {
   const BioWayRegisterScreen({super.key});
@@ -73,6 +74,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
   // Servicios
   late final BioWayAuthService _bioWayAuthService;
   final AuthService _authService = AuthService();
+  final UserManagementService _userManagementService = UserManagementService();
 
   @override
   void initState() {
@@ -189,30 +191,88 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
 
     setState(() => _isLoading = true);
     
-    // Simular registro
-    await Future.delayed(const Duration(milliseconds: 1500));
-    
-    if (mounted) {
-      setState(() => _isLoading = false);
+    try {
+      Map<String, dynamic>? userData;
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white),
-              const SizedBox(width: 12),
-              Text('Registro exitoso como ${_selectedUserType == 'ciudadano' ? 'Ciudadano' : 'Recolector'}'),
-            ],
-          ),
-          backgroundColor: BioWayColors.success,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+      // Verificar si el email ya está registrado
+      final isRegistered = await _userManagementService.isEmailRegistered(_emailController.text.trim());
+      if (isRegistered) {
+        _showError('Este email ya está registrado');
+        setState(() => _isLoading = false);
+        return;
+      }
       
-      Navigator.pop(context);
+      if (_selectedUserType == 'ciudadano') {
+        // Crear usuario brindador
+        userData = await _userManagementService.createBrindadorUser(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          nombre: _nameController.text.trim(),
+          telefono: _phoneController.text.trim(),
+          direccion: _addressController.text.trim(),
+        );
+      } else if (_selectedUserType == 'recolector') {
+        // Crear usuario recolector
+        userData = await _userManagementService.createRecolectorUser(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          nombre: _nameController.text.trim(),
+          telefono: _phoneController.text.trim(),
+          vehiculo: 'Bicicleta', // Por defecto
+          zona: _selectedZone ?? 'Sin asignar',
+        );
+      }
+      
+      if (userData != null && mounted) {
+        setState(() => _isLoading = false);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Registro exitoso como ${_selectedUserType == 'ciudadano' ? 'Brindador' : 'Recolector'}\n' +
+                    'Usuario guardado en Firebase',
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: BioWayColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        
+        String errorMessage = 'Error al registrar: ';
+        if (e.toString().contains('email-already-in-use')) {
+          errorMessage = 'Este email ya está registrado';
+        } else if (e.toString().contains('weak-password')) {
+          errorMessage = 'La contraseña es muy débil';
+        } else if (e.toString().contains('invalid-email')) {
+          errorMessage = 'El email no es válido';
+        } else if (e.toString().contains('network-request-failed')) {
+          errorMessage = 'Error de conexión. Verifica tu internet';
+        } else {
+          errorMessage = 'Error: ${e.toString()}';
+        }
+        
+        _showError(errorMessage);
+      }
     }
   }
 

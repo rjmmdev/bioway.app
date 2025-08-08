@@ -33,10 +33,7 @@ class DefaultFirebaseOptions {
           'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -64,5 +61,13 @@ class DefaultFirebaseOptions {
     projectId: 'bioway-mexico',
     storageBucket: 'bioway-mexico.firebasestorage.app',
     iosBundleId: 'com.example.biowayNuevaVersion',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyDWhBaGXpQjiFzkQ9XRuvGwEgKJrPWypNY',
+    appId: '1:763751005076:windows:72704ce4a512682d56ed81',
+    messagingSenderId: '763751005076',
+    projectId: 'bioway-mexico',
+    storageBucket: 'bioway-mexico.firebasestorage.app',
   );
 }

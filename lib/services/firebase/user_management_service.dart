@@ -14,22 +14,26 @@ class UserManagementService {
     String? empresa,
   }) async {
     try {
+      print('🔵 Iniciando creación de administrador...');
+      print('📧 Email: $email');
+      
       // Crear usuario en Firebase Auth
       final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+      print('✅ Usuario creado en Firebase Auth: ${userCredential.user?.uid}');
 
       final User? user = userCredential.user;
       if (user != null) {
-        // Crear documento en Firestore
+        // Crear documento en Firestore con la estructura correcta
         final userData = {
           'uid': user.uid,
           'email': email,
           'nombre': nombre,
           'telefono': telefono,
           'empresa': empresa ?? 'BioWay Admin',
-          'userType': 'admin',
+          'userType': 'administrador',
           'role': 'administrador',
           'permissions': {
             'canManageUsers': true,
@@ -39,19 +43,42 @@ class UserManagementService {
             'canManageSystem': true,
           },
           'isActive': true,
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
         };
 
-        await _firestore.collection('users').doc(user.uid).set(userData);
+        print('📝 Guardando en Firestore: usuarios/administradores/lista/${user.uid}');
+        
+        // Guardar en la estructura: usuarios -> administradores -> {uid}
+        await _firestore
+            .collection('usuarios')
+            .doc('administradores')
+            .collection('lista')
+            .doc(user.uid)
+            .set(userData);
+        
+        print('✅ Datos guardados en Firestore');
+        
         
         // Actualizar displayName del usuario
         await user.updateDisplayName(nombre);
         
-        return userData;
+        // Verificar que se guardó correctamente
+        final verifyDoc = await _firestore
+            .collection('usuarios')
+            .doc('administradores')
+            .collection('lista')
+            .doc(user.uid)
+            .get();
+        
+        if (verifyDoc.exists) {
+          print('✅ VERIFICACIÓN: Usuario administrador guardado correctamente en Firestore');
+          return userData;
+        } else {
+          print('❌ ERROR: No se pudo verificar el guardado en Firestore');
+          throw Exception('No se pudo verificar el guardado en Firestore');
+        }
       }
     } catch (e) {
-      print('Error creando usuario administrador: $e');
+      print('❌ Error creando usuario administrador: $e');
       throw e;
     }
     return null;
@@ -71,15 +98,20 @@ class UserManagementService {
     Map<String, String>? horarios,
   }) async {
     try {
+      print('🔵 Iniciando creación de centro de acopio...');
+      print('📧 Email: $email');
+      print('🏪 Centro: $nombreCentro');
+      
       // Crear usuario en Firebase Auth
       final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+      print('✅ Usuario creado en Firebase Auth: ${userCredential.user?.uid}');
 
       final User? user = userCredential.user;
       if (user != null) {
-        // Crear documento del centro en Firestore
+        // Crear documento del centro en Firestore con la estructura correcta
         final centroData = {
           'uid': user.uid,
           'email': email,
@@ -91,7 +123,7 @@ class UserManagementService {
             'latitud': latitud,
             'longitud': longitud,
           },
-          'userType': 'centro_acopio',
+          'userType': 'centros_acopio',
           'role': 'centro',
           'materialesAceptados': materialesAceptados ?? [
             'Plástico PET',
@@ -116,23 +148,49 @@ class UserManagementService {
           },
           'isActive': true,
           'verificado': true,
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
         };
 
-        // Guardar en colección users
-        await _firestore.collection('users').doc(user.uid).set(centroData);
+        print('📝 Guardando en Firestore: usuarios/centros_acopio/lista/${user.uid}');
         
-        // También guardar en colección centros_acopio para búsquedas
-        await _firestore.collection('centros_acopio').doc(user.uid).set(centroData);
+        // Guardar en la estructura: usuarios -> centros_acopio -> lista -> {uid}
+        await _firestore
+            .collection('usuarios')
+            .doc('centros_acopio')
+            .collection('lista')
+            .doc(user.uid)
+            .set(centroData);
+        
+        print('✅ Datos guardados en Firestore');
+        
+        // También guardar una referencia en la colección principal para búsquedas rápidas
+        await _firestore.collection('usuarios').doc('centros_acopio').set({
+          'totalCentros': FieldValue.increment(1),
+          'ultimaActualizacion': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        
+        print('✅ Contador actualizado');
         
         // Actualizar displayName del usuario
         await user.updateDisplayName(nombreCentro);
         
-        return centroData;
+        // Verificar que se guardó correctamente
+        final verifyDoc = await _firestore
+            .collection('usuarios')
+            .doc('centros_acopio')
+            .collection('lista')
+            .doc(user.uid)
+            .get();
+        
+        if (verifyDoc.exists) {
+          print('✅ VERIFICACIÓN: Centro de acopio guardado correctamente en Firestore');
+          return centroData;
+        } else {
+          print('❌ ERROR: No se pudo verificar el guardado en Firestore');
+          throw Exception('No se pudo verificar el guardado en Firestore');
+        }
       }
     } catch (e) {
-      print('Error creando centro de acopio: $e');
+      print('❌ Error creando centro de acopio: $e');
       throw e;
     }
     return null;
@@ -143,13 +201,176 @@ class UserManagementService {
     try {
       final User? user = _auth.currentUser;
       if (user != null) {
-        final doc = await _firestore.collection('users').doc(user.uid).get();
+        // Buscar en diferentes colecciones según el tipo de usuario
+        // Primero intentar en administradores
+        var doc = await _firestore
+            .collection('usuarios')
+            .doc('administradores')
+            .collection('lista')
+            .doc(user.uid)
+            .get();
+        
+        if (doc.exists) {
+          return doc.data();
+        }
+        
+        // Luego en centros de acopio
+        doc = await _firestore
+            .collection('usuarios')
+            .doc('centros_acopio')
+            .collection('lista')
+            .doc(user.uid)
+            .get();
+        
+        if (doc.exists) {
+          return doc.data();
+        }
+        
+        // Luego en brindadores
+        doc = await _firestore
+            .collection('usuarios')
+            .doc('brindadores')
+            .collection('lista')
+            .doc(user.uid)
+            .get();
+        
+        if (doc.exists) {
+          return doc.data();
+        }
+        
+        // Finalmente en recolectores
+        doc = await _firestore
+            .collection('usuarios')
+            .doc('recolectores')
+            .collection('lista')
+            .doc(user.uid)
+            .get();
+        
         if (doc.exists) {
           return doc.data();
         }
       }
     } catch (e) {
       print('Error obteniendo usuario actual: $e');
+    }
+    return null;
+  }
+  
+  // Crear usuario brindador (desde el registro normal)
+  Future<Map<String, dynamic>?> createBrindadorUser({
+    required String email,
+    required String password,
+    required String nombre,
+    required String telefono,
+    String? direccion,
+  }) async {
+    try {
+      // Crear usuario en Firebase Auth
+      final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final User? user = userCredential.user;
+      if (user != null) {
+        // Crear documento en Firestore con la estructura correcta
+        final userData = {
+          'uid': user.uid,
+          'email': email,
+          'nombre': nombre,
+          'telefono': telefono,
+          'direccion': direccion ?? '',
+          'userType': 'brindador',
+          'role': 'brindador',
+          'puntos': 0,
+          'nivel': 'Principiante',
+          'totalReciclado': 0,
+          'isActive': true,
+        };
+
+        // Guardar en la estructura: usuarios -> brindadores -> lista -> {uid}
+        await _firestore
+            .collection('usuarios')
+            .doc('brindadores')
+            .collection('lista')
+            .doc(user.uid)
+            .set(userData);
+        
+        // También guardar una referencia en la colección principal
+        await _firestore.collection('usuarios').doc('brindadores').set({
+          'totalUsuarios': FieldValue.increment(1),
+          'ultimaActualizacion': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        
+        // Actualizar displayName del usuario
+        await user.updateDisplayName(nombre);
+        
+        return userData;
+      }
+    } catch (e) {
+      print('Error creando usuario brindador: $e');
+      throw e;
+    }
+    return null;
+  }
+  
+  // Crear usuario recolector
+  Future<Map<String, dynamic>?> createRecolectorUser({
+    required String email,
+    required String password,
+    required String nombre,
+    required String telefono,
+    String? vehiculo,
+    String? zona,
+  }) async {
+    try {
+      // Crear usuario en Firebase Auth
+      final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final User? user = userCredential.user;
+      if (user != null) {
+        // Crear documento en Firestore con la estructura correcta
+        final userData = {
+          'uid': user.uid,
+          'email': email,
+          'nombre': nombre,
+          'telefono': telefono,
+          'vehiculo': vehiculo ?? 'Bicicleta',
+          'zona': zona ?? 'Sin asignar',
+          'userType': 'recolector',
+          'role': 'recolector',
+          'totalRecolectado': 0,
+          'viajesCompletados': 0,
+          'calificacion': 5.0,
+          'isActive': true,
+          'disponible': true,
+        };
+
+        // Guardar en la estructura: usuarios -> recolectores -> lista -> {uid}
+        await _firestore
+            .collection('usuarios')
+            .doc('recolectores')
+            .collection('lista')
+            .doc(user.uid)
+            .set(userData);
+        
+        // También guardar una referencia en la colección principal
+        await _firestore.collection('usuarios').doc('recolectores').set({
+          'totalUsuarios': FieldValue.increment(1),
+          'ultimaActualizacion': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        
+        // Actualizar displayName del usuario
+        await user.updateDisplayName(nombre);
+        
+        return userData;
+      }
+    } catch (e) {
+      print('Error creando usuario recolector: $e');
+      throw e;
     }
     return null;
   }
@@ -166,10 +387,9 @@ class UserManagementService {
   }
 
   // Actualizar información del usuario
-  Future<void> updateUserData(String uid, Map<String, dynamic> data) async {
+  Future<void> updateUserData(String uid, String userType, Map<String, dynamic> data) async {
     try {
-      data['updatedAt'] = FieldValue.serverTimestamp();
-      await _firestore.collection('users').doc(uid).update(data);
+      await _firestore.collection('usuarios').doc(userType).collection('lista').doc(uid).update(data);
     } catch (e) {
       print('Error actualizando usuario: $e');
       throw e;
@@ -180,7 +400,9 @@ class UserManagementService {
   Future<List<Map<String, dynamic>>> getAllCentrosAcopio() async {
     try {
       final QuerySnapshot snapshot = await _firestore
-          .collection('centros_acopio')
+          .collection('usuarios')
+          .doc('centros_acopio')
+          .collection('lista')
           .where('isActive', isEqualTo: true)
           .get();
       

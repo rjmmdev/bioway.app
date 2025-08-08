@@ -9,6 +9,7 @@ import '../../../services/firebase/user_management_service.dart';
 import 'bioway_register_screen.dart';
 import '../temp/admin_register_screen.dart';
 import '../temp/centro_acopio_register_screen.dart';
+import '../temp/test_firebase_screen.dart';
 import '../brindador/brindador_main_screen.dart';
 import '../recolector/recolector_main_screen.dart';
 import '../maestro/maestro_home_screen.dart';
@@ -176,7 +177,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
                   ),
                 );
                 break;
-              case 'admin':
+              case 'administrador':
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
@@ -184,7 +185,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
                   ),
                 );
                 break;
-              case 'centro_acopio':
+              case 'centros_acopio':
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
@@ -192,6 +193,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
                   ),
                 );
                 break;
+              case 'brindador':
               default:
                 Navigator.pushReplacement(
                   context,
@@ -850,6 +852,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
           Container(
             width: double.infinity,
             height: 48,
+            margin: const EdgeInsets.only(bottom: 12),
             child: ElevatedButton.icon(
               onPressed: () {
                 HapticFeedback.lightImpact();
@@ -875,6 +878,36 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.teal.withValues(alpha: 0.8),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+              ),
+            ),
+          ),
+          
+          // Botón Test Firebase
+          Container(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TestFirebaseScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.bug_report, size: 20),
+              label: const Text(
+                '🔧 Test Firebase Connection',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.withValues(alpha: 0.8),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

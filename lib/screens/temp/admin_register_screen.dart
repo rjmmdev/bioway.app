@@ -42,6 +42,8 @@ class _AdminRegisterScreenState extends State<AdminRegisterScreen> {
       setState(() => _isLoading = true);
       
       try {
+        print('🔵 Iniciando registro de administrador...');
+        
         // Verificar si el email ya está registrado
         final isRegistered = await _userService.isEmailRegistered(_emailController.text.trim());
         if (isRegistered) {
@@ -62,12 +64,32 @@ class _AdminRegisterScreenState extends State<AdminRegisterScreen> {
         );
         
         if (userData != null) {
-          _showMessage('Administrador creado exitosamente');
-          await Future.delayed(const Duration(seconds: 2));
+          print('✅ Administrador creado exitosamente');
+          _showMessage(
+            '✅ Administrador creado y guardado en Firebase\n' +
+            'Email: ${_emailController.text.trim()}\n' +
+            'UID: ${userData['uid']}',
+          );
+          await Future.delayed(const Duration(seconds: 3));
           if (mounted) Navigator.pop(context);
+        } else {
+          throw Exception('No se pudo crear el usuario');
         }
       } catch (e) {
-        _showMessage('Error: ${e.toString()}', isError: true);
+        print('❌ Error en registro: $e');
+        String errorMessage = 'Error: ';
+        if (e.toString().contains('email-already-in-use')) {
+          errorMessage = 'Este email ya está registrado';
+        } else if (e.toString().contains('weak-password')) {
+          errorMessage = 'La contraseña es muy débil';
+        } else if (e.toString().contains('invalid-email')) {
+          errorMessage = 'El email no es válido';
+        } else if (e.toString().contains('network-request-failed')) {
+          errorMessage = 'Error de conexión. Verifica tu internet';
+        } else {
+          errorMessage = 'Error: ${e.toString()}';
+        }
+        _showMessage(errorMessage, isError: true);
       } finally {
         if (mounted) setState(() => _isLoading = false);
       }
