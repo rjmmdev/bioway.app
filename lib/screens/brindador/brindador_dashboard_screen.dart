@@ -6,6 +6,7 @@ import '../../../utils/colors.dart';
 import '../../../models/bioway/horario.dart';
 import '../../../models/bioway/user_state.dart';
 import 'brindador_residuos_grid_screen.dart';
+import '../ai/waste_scanner_screen.dart';
 
 class BrindadorDashboardScreen extends StatefulWidget {
   const BrindadorDashboardScreen({super.key});
@@ -64,28 +65,38 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
     
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.only(bottom: 20),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 20),
-                    _buildRecycleNowCard(days[_selectedIndex]),
-                    const SizedBox(height: 24),
-                    _buildScheduleSection(days),
-                    const SizedBox(height: 24),
-                    _buildTipsSection(),
-                  ],
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 20),
+                        _buildRecycleNowCard(days[_selectedIndex]),
+                        const SizedBox(height: 24),
+                        _buildScheduleSection(days),
+                        const SizedBox(height: 24),
+                        _buildTipsSection(),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+          // Botón flotante de escáner IA
+          Positioned(
+            right: 16,
+            bottom: 80, // Arriba del bottom navigation
+            child: _buildAIScannerButton(),
+          ),
+        ],
       ),
     );
   }
@@ -783,5 +794,99 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
         );
       }
     }
+  }
+  
+  Widget _buildAIScannerButton() {
+    return AnimatedBuilder(
+      animation: _scaleAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [
+                  BioWayColors.primaryGreen,
+                  BioWayColors.turquoise,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: BioWayColors.primaryGreen.withValues(alpha: 0.4),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          const WasteScannerScreen(),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(0.0, 1.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeOutCubic;
+                        
+                        var tween = Tween(begin: begin, end: end).chain(
+                          CurveTween(curve: curve),
+                        );
+                        
+                        return SlideTransition(
+                          position: animation.drive(tween),
+                          child: child,
+                        );
+                      },
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 64,
+                  height: 64,
+                  padding: const EdgeInsets.all(16),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(
+                        Icons.camera_alt,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                      // Badge de IA
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.auto_awesome,
+                            size: 10,
+                            color: BioWayColors.primaryGreen,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }

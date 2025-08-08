@@ -1,0 +1,103 @@
+{
+  "model_name": "waste_classifier_v2",
+  "version": "2.0.0",
+  "input_size": 224,
+  "categories": {
+    "plastic_bottle": {
+      "id": "PET",
+      "name": "Botella PET",
+      "code": "1",
+      "color": "0xFF2196F3",
+      "instructions": "Enjuagar y aplastar. Quitar tapa y etiqueta.",
+      "value": 5
+    },
+    "cardboard": {
+      "id": "CARDBOARD",
+      "name": "Cartón",
+      "code": "PAP-20",
+      "color": "0xFF8B4513",
+      "instructions": "Desarmar cajas. Mantener seco y limpio.",
+      "value": 3
+    },
+    "glass_bottle": {
+      "id": "GLASS",
+      "name": "Vidrio",
+      "code": "GL-70",
+      "color": "0xFF4CAF50",
+      "instructions": "Enjuagar. Separar por color si es posible.",
+      "value": 2
+    },
+    "aluminum_can": {
+      "id": "ALU",
+      "name": "Lata de Aluminio",
+      "code": "41",
+      "color": "0xFF9E9E9E",
+      "instructions": "Aplastar para ahorrar espacio.",
+      "value": 8
+    },
+    "paper": {
+      "id": "PAPER",
+      "name": "Papel",
+      "code": "PAP-22",
+      "color": "0xFFFFEB3B",
+      "instructions": "No mezclar con papel sucio o mojado.",
+      "value": 2
+    },
+    "organic": {
+      "id": "ORGANIC",
+      "name": "Orgánico",
+      "code": "ORG",
+      "color": "0xFF4CAF50",
+      "instructions": "Compostar si es posible.",
+      "value": 1
+    },
+    "metal": {
+      "id": "METAL",
+      "name": "Metal",
+      "code": "FE-40",
+      "color": "0xFF607D8B",
+      "instructions": "Separar metales ferrosos y no ferrosos.",
+      "value": 6
+    },
+    "plastic_bag": {
+      "id": "LDPE",
+      "name": "Bolsa Plástica",
+      "code": "4",
+      "color": "0xFF03A9F4",
+      "instructions": "Limpiar y secar. Juntar varias bolsas.",
+      "value": 2
+    },
+    "styrofoam": {
+      "id": "PS",
+      "name": "Poliestireno",
+      "code": "6",
+      "color": "0xFFE91E63",
+      "instructions": "Limpiar restos de comida. Difícil de reciclar.",
+      "value": 1
+    },
+    "electronic_waste": {
+      "id": "EWASTE",
+      "name": "Electrónico",
+      "code": "E-WASTE",
+      "color": "0xFF9C27B0",
+      "instructions": "Llevar a centro especializado. No tirar con basura común.",
+      "value": 10
+    },
+    "battery": {
+      "id": "BATTERY",
+      "name": "Batería",
+      "code": "BAT",
+      "color": "0xFFFF5722",
+      "instructions": "PELIGROSO. Llevar a centro de acopio especial.",
+      "value": 15
+    },
+    "textiles": {
+      "id": "TEXTILE",
+      "name": "Textil",
+      "code": "TEX",
+      "color": "0xFF795548",
+      "instructions": "Donar si está en buen estado. Limpiar antes de reciclar.",
+      "value": 3
+    }
+  }
+}
