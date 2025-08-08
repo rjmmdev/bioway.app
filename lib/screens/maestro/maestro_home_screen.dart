@@ -85,13 +85,20 @@ class _MaestroHomeScreenState extends State<MaestroHomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: BioWayColors.primaryGreen,
+        backgroundColor: BioWayColors.navGreen,
         elevation: 0,
         title: const Text(
           'Panel Maestro BioWay',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
+            shadows: [
+              Shadow(
+                color: Colors.black54,
+                offset: Offset(1, 1),
+                blurRadius: 2,
+              ),
+            ],
           ),
         ),
         actions: [
@@ -126,10 +133,7 @@ class _MaestroHomeScreenState extends State<MaestroHomeScreen> {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      BioWayColors.primaryGreen,
-                      BioWayColors.primaryGreen.withValues(alpha: 0.8),
-                    ],
+                    colors: BioWayColors.backgroundGradientSoft,
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -140,12 +144,12 @@ class _MaestroHomeScreenState extends State<MaestroHomeScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: Colors.black.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
                         Icons.admin_panel_settings,
-                        color: Colors.white,
+                        color: Color(0xFF00553F),
                         size: 30,
                       ),
                     ),
@@ -157,14 +161,14 @@ class _MaestroHomeScreenState extends State<MaestroHomeScreen> {
                           const Text(
                             'Bienvenido',
                             style: TextStyle(
-                              color: Colors.white70,
+                              color: Color(0xFF00553F),
                               fontSize: 14,
                             ),
                           ),
                           Text(
                             _adminName,
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: Color(0xFF00553F),
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),

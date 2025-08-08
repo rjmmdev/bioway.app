@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // import 'package:cloud_firestore/cloud_firestore.dart'; // TODO: Descomentar para producción
 import '../../../utils/colors.dart';
+import '../../../models/bioway/empresa_model.dart';
 import 'empresa_form_screen.dart';
 
 class EmpresasListScreen extends StatefulWidget {
@@ -116,7 +117,7 @@ class _EmpresasListScreenState extends State<EmpresasListScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: BioWayColors.primaryGreen,
+        backgroundColor: BioWayColors.navGreen,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
@@ -137,7 +138,11 @@ class _EmpresasListScreenState extends State<EmpresasListScreen> {
           // Header con búsqueda y filtros
           Container(
             decoration: BoxDecoration(
-              color: BioWayColors.primaryGreen,
+              gradient: LinearGradient(
+                colors: BioWayColors.backgroundGradientSoft,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(24),
                 bottomRight: Radius.circular(24),
@@ -166,7 +171,7 @@ class _EmpresasListScreenState extends State<EmpresasListScreen> {
                       hintText: 'Buscar por nombre o código...',
                       prefixIcon: Icon(
                         Icons.search,
-                        color: BioWayColors.primaryGreen,
+                        color: BioWayColors.navGreen,
                       ),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
@@ -241,7 +246,7 @@ class _EmpresasListScreenState extends State<EmpresasListScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _agregarEmpresa,
-        backgroundColor: BioWayColors.primaryGreen,
+        backgroundColor: BioWayColors.navGreen,
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text(
           'Nueva Empresa',
@@ -273,7 +278,7 @@ class _EmpresasListScreenState extends State<EmpresasListScreen> {
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? BioWayColors.primaryGreen : Colors.white,
+            color: isSelected ? BioWayColors.navGreen : const Color(0xFF00553F),
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             fontSize: 14,
           ),
@@ -321,12 +326,12 @@ class _EmpresasListScreenState extends State<EmpresasListScreen> {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: BioWayColors.primaryGreen.withOpacity(0.1),
+                      color: BioWayColors.navGreen.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       Icons.business,
-                      color: BioWayColors.primaryGreen,
+                      color: BioWayColors.navGreen,
                       size: 24,
                     ),
                   ),
@@ -613,7 +618,7 @@ class _EmpresasListScreenState extends State<EmpresasListScreen> {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: BioWayColors.primaryGreen),
+            Icon(icon, size: 16, color: BioWayColors.navGreen),
             const SizedBox(width: 4),
             Text(
               value,
@@ -735,10 +740,11 @@ class _EmpresasListScreenState extends State<EmpresasListScreen> {
   }
 
   void _verDetalleEmpresa(Map<String, dynamic> empresa) {
+    final empresaModel = EmpresaModel.fromMap(empresa);
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EmpresaFormScreen(empresa: empresa),
+        builder: (context) => EmpresaFormScreen(empresa: empresaModel),
       ),
     );
   }
@@ -784,7 +790,7 @@ class _EmpresasListScreenState extends State<EmpresasListScreen> {
                     'Total de Empresas',
                     _empresas.length.toString(),
                     Icons.business,
-                    BioWayColors.primaryGreen,
+                    BioWayColors.navGreen,
                   ),
                   _buildStatCard(
                     'Empresas Activas',

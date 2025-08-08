@@ -66,12 +66,12 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
               expandedHeight: 180,
               floating: false,
               pinned: true,
-              backgroundColor: BioWayColors.primaryGreen,
+              backgroundColor: BioWayColors.navGreen,
               flexibleSpace: FlexibleSpaceBar(
                 title: const Text(
                   'Centro de Acopio',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: Color(0xFF00553F),
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
                   ),
@@ -79,12 +79,9 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
                 background: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
+                      colors: BioWayColors.backgroundGradientSoft,
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        BioWayColors.primaryGreen,
-                        BioWayColors.mediumGreen,
-                      ],
                     ),
                   ),
                   child: Stack(
@@ -97,7 +94,7 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
                           height: 200,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.black.withOpacity(0.05),
                           ),
                         ),
                       ),
@@ -109,7 +106,7 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
                           height: 150,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.05),
+                            color: Colors.black.withOpacity(0.03),
                           ),
                         ),
                       ),
@@ -195,7 +192,7 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showQRScanner,
-        backgroundColor: BioWayColors.primaryGreen,
+        backgroundColor: BioWayColors.navGreen,
         icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
         label: const Text(
           'Escanear QR',
@@ -220,7 +217,7 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
             end: Alignment.bottomRight,
             colors: [
               Colors.white,
-              BioWayColors.primaryGreen.withOpacity(0.05),
+              BioWayColors.navGreen.withOpacity(0.05),
             ],
           ),
         ),
@@ -232,12 +229,12 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: BioWayColors.primaryGreen.withOpacity(0.1),
+                    color: BioWayColors.navGreen.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     Icons.warehouse,
-                    color: BioWayColors.primaryGreen,
+                    color: BioWayColors.navGreen,
                     size: 28,
                   ),
                 ),
@@ -314,7 +311,10 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const PrepagoScreen(),
+                          builder: (context) => PrepagoScreen(
+                            centroAcopioId: 'centro_demo',
+                            saldoActual: _centroAcopio['saldoPrepago'].toDouble(),
+                          ),
                         ),
                       );
                     },
@@ -415,26 +415,26 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
       {
         'title': 'Recepción',
         'icon': Icons.inbox,
-        'color': BioWayColors.primaryGreen,
-        'screen': const RecepcionMaterialScreen(),
+        'color': BioWayColors.navGreen,
+        'screen': const RecepcionMaterialScreen(qrCode: 'demo_qr', centroAcopioId: 'centro_demo'),
       },
       {
         'title': 'Inventario',
         'icon': Icons.inventory_2,
         'color': BioWayColors.info,
-        'screen': const InventarioScreen(),
+        'screen': const InventarioScreen(centroAcopioId: 'centro_demo'),
       },
       {
         'title': 'Reportes',
         'icon': Icons.analytics,
         'color': BioWayColors.warning,
-        'screen': const ReportesScreen(),
+        'screen': const ReportesScreen(centroAcopioId: 'centro_demo'),
       },
       {
         'title': 'Prepago',
         'icon': Icons.account_balance_wallet,
         'color': BioWayColors.success,
-        'screen': const PrepagoScreen(),
+        'screen': PrepagoScreen(centroAcopioId: 'centro_demo', saldoActual: _centroAcopio['saldoPrepago'].toDouble()),
       },
     ];
 
@@ -514,10 +514,10 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
           ),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: BioWayColors.primaryGreen.withOpacity(0.1),
+              backgroundColor: BioWayColors.navGreen.withOpacity(0.1),
               child: Icon(
                 Icons.person,
-                color: BioWayColors.primaryGreen,
+                color: BioWayColors.navGreen,
               ),
             ),
             title: Text(
@@ -620,7 +620,7 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: BioWayColors.primaryGreen,
+                    color: BioWayColors.navGreen,
                     width: 2,
                   ),
                 ),
@@ -631,7 +631,7 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
                       Icon(
                         Icons.qr_code_scanner,
                         size: 100,
-                        color: BioWayColors.primaryGreen.withOpacity(0.5),
+                        color: BioWayColors.navGreen.withOpacity(0.5),
                       ),
                       const SizedBox(height: 20),
                       Text(
@@ -663,12 +663,12 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const RecepcionMaterialScreen(),
+                      builder: (context) => const RecepcionMaterialScreen(qrCode: 'demo_qr', centroAcopioId: 'centro_demo'),
                     ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: BioWayColors.primaryGreen,
+                  backgroundColor: BioWayColors.navGreen,
                   minimumSize: const Size(double.infinity, 50),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),

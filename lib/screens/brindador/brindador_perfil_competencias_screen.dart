@@ -63,12 +63,8 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
       nivel: 'Oro', // Nivel actualizado
       fechaRegistro: DateTime.now().subtract(const Duration(days: 180)),
       direccion: 'Av. Insurgentes Sur 123',
-      numeroExterior: '456',
-      codigoPostal: '03810',
-      estado: 'Ciudad de México',
       municipio: 'Benito Juárez',
       colonia: 'Del Valle',
-      totalResiduosBrindados: 123,
       totalKgReciclados: 245.5,
       totalCO2Evitado: 612.3,
     );
@@ -79,42 +75,44 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
 
     _miCompetencia = BioCompetencia(
       userId: 'usuario_actual',
+      nombre: mockUser.nombre,
+      fotoPerfil: '',
+      puntos: mockUser.bioCoins,
+      nivel: 'Oro',
+      co2Evitado: mockUser.totalCO2Evitado,
+      posicion: 7,
+      materialesReciclados: {},
+      diasConsecutivos: 5,
       userName: mockUser.nombre,
       userAvatar: '',
       bioImpulso: 5,
       bioImpulsoMaximo: 8,
       bioImpulsoActivo: true,
-      ultimaActividad: DateTime.now().subtract(const Duration(days: 2)),
-      reciclajesEstaSemana: 1,
-      inicioSemanaActual: DateTime.now(),
-      puntosSemanales: 3450,
       puntosTotales: mockUser.bioCoins,
       posicionRanking: 7,
       kgReciclados: mockUser.totalKgReciclados,
-      co2Evitado: mockUser.totalCO2Evitado,
-      nivel: 3,
-      insigniaActual: '🥇',
     );
 
     // Generar ranking simplificado
     _rankingGlobal = List.generate(10, (index) {
       return BioCompetencia(
         userId: index == 6 ? 'usuario_actual' : 'user_$index',
+        nombre: index == 6 ? mockUser.nombre : 'Usuario ${index + 1}',
+        fotoPerfil: '',
+        puntos: 45200 - (index * 3000),
+        nivel: index < 3 ? 'Diamante' : index < 6 ? 'Oro' : 'Plata',
+        co2Evitado: 2225.5 - (index * 200),
+        posicion: index + 1,
+        materialesReciclados: {},
+        diasConsecutivos: 15 - index,
         userName: index == 6 ? mockUser.nombre : 'Usuario ${index + 1}',
         userAvatar: '',
         bioImpulso: 15 - index,
         bioImpulsoMaximo: 15 - index,
         bioImpulsoActivo: true,
-        ultimaActividad: DateTime.now().subtract(Duration(hours: index * 2)),
-        reciclajesEstaSemana: 2,
-        inicioSemanaActual: DateTime.now(),
-        puntosSemanales: 8920 - (index * 850),
         puntosTotales: 45200 - (index * 3000),
         posicionRanking: index + 1,
         kgReciclados: 890.2 - (index * 80),
-        co2Evitado: 2225.5 - (index * 200),
-        nivel: index < 3 ? 5 : index < 6 ? 4 : 3,
-        insigniaActual: index < 3 ? '💎' : index < 6 ? '🥇' : '🥈',
       );
     });
 
@@ -144,8 +142,9 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
           ),
           if (_showCelebration)
             BioCelebrationWidget(
-              title: '¡Felicidades!',
-              message: '¡Nuevo logro desbloqueado!',
+              titulo: '¡Felicidades!',
+              mensaje: '¡Nuevo logro desbloqueado!',
+              puntosGanados: 100,
               onComplete: () {
                 setState(() {
                   _showCelebration = false;
@@ -171,7 +170,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                   style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A1A),
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -276,7 +275,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
               Icon(
                 icon,
                 size: 20,
-                color: isSelected ? BioWayColors.primaryGreen : Colors.grey[600],
+                color: isSelected ? BioWayColors.navGreen : Colors.grey[600],
               ),
               const SizedBox(width: 8),
               Text(
@@ -284,7 +283,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? BioWayColors.primaryGreen : Colors.grey[600],
+                  color: isSelected ? BioWayColors.navGreen : Colors.grey[600],
                 ),
               ),
             ],
@@ -329,10 +328,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            BioWayColors.primaryGreen,
-            BioWayColors.primaryGreen.withOpacity(0.8),
-          ],
+          colors: BioWayColors.backgroundGradientSoft,
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -359,7 +355,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
               Container(
                 width: 1,
                 height: 40,
-                color: Colors.white.withOpacity(0.3),
+                color: Colors.black.withOpacity(0.2),
               ),
               _buildStatItem(
                 icon: Icons.emoji_events,
@@ -373,14 +369,14 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.black.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
                 Icon(
                   Icons.local_fire_department,
-                  color: Colors.white,
+                  color: const Color(0xFF00553F),
                   size: 24,
                 ),
                 const SizedBox(width: 12),
@@ -391,15 +387,15 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                       const Text(
                         'BioImpulso Semanal',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: Color(0xFF00553F),
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
                         '${_miCompetencia?.bioImpulso ?? 0} semanas consecutivas',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
+                        style: const TextStyle(
+                          color: Color(0xFF00553F),
                           fontSize: 14,
                         ),
                       ),
@@ -442,23 +438,23 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
         children: [
           Icon(
             icon,
-            color: isLight ? Colors.white.withOpacity(0.9) : BioWayColors.primaryGreen,
+            color: isLight ? const Color(0xFF00553F) : BioWayColors.navGreen,
             size: 24,
           ),
           const SizedBox(height: 8),
           Text(
             value,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: isLight ? Colors.white : const Color(0xFF1A1A1A),
+              color: Color(0xFF00553F),
             ),
           ),
           Text(
             label,
             style: TextStyle(
               fontSize: 12,
-              color: isLight ? Colors.white.withOpacity(0.8) : Colors.grey[600],
+              color: isLight ? const Color(0xFF00553F) : Colors.grey[600],
             ),
           ),
         ],
@@ -488,7 +484,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1A1A),
+              color: Colors.white,
             ),
           ),
           const SizedBox(height: 16),
@@ -499,7 +495,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                   icon: Icons.recycling,
                   value: '${mockUser.totalKgReciclados.toStringAsFixed(1)} kg',
                   label: 'Total reciclado',
-                  color: BioWayColors.primaryGreen,
+                  color: BioWayColors.navGreen,
                 ),
               ),
               const SizedBox(width: 12),
@@ -609,7 +605,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1A1A),
+              color: Colors.white,
             ),
           ),
           const SizedBox(height: 16),
@@ -747,10 +743,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            BioWayColors.primaryGreen,
-            BioWayColors.primaryGreen.withOpacity(0.8),
-          ],
+          colors: BioWayColors.backgroundGradientSoft,
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -764,15 +757,15 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Color(0xFF00553F),
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Top 10 recicladores de todos los tiempos',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.white.withOpacity(0.9),
+              color: Color(0xFF00553F),
             ),
           ),
         ],
@@ -784,10 +777,10 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: esMiPerfil ? BioWayColors.primaryGreen.withOpacity(0.05) : Colors.white,
+        color: esMiPerfil ? BioWayColors.navGreen.withOpacity(0.05) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: esMiPerfil
-            ? Border.all(color: BioWayColors.primaryGreen, width: 2)
+            ? Border.all(color: BioWayColors.navGreen, width: 2)
             : null,
         boxShadow: [
           BoxShadow(
@@ -828,7 +821,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: BioWayColors.primaryGreen,
+                  color: BioWayColors.navGreen,
                 ),
               ),
             ),
@@ -842,7 +835,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A1A),
+                      color: Colors.white,
                     ),
                   ),
                   Row(
@@ -873,7 +866,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: BioWayColors.primaryGreen,
+                    color: BioWayColors.navGreen,
                   ),
                 ),
                 Text(
@@ -968,10 +961,10 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: completada ? BioWayColors.primaryGreen.withOpacity(0.05) : Colors.white,
+        color: completada ? BioWayColors.navGreen.withOpacity(0.05) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: completada
-            ? Border.all(color: BioWayColors.primaryGreen, width: 2)
+            ? Border.all(color: BioWayColors.navGreen, width: 2)
             : null,
         boxShadow: [
           BoxShadow(
@@ -1008,7 +1001,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: completada ? BioWayColors.primaryGreen : const Color(0xFF1A1A1A),
+                    color: completada ? BioWayColors.navGreen : Colors.white,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1026,7 +1019,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: completada 
-                  ? BioWayColors.primaryGreen.withOpacity(0.1)
+                  ? BioWayColors.navGreen.withOpacity(0.1)
                   : Colors.grey[100],
               borderRadius: BorderRadius.circular(20),
             ),
@@ -1037,7 +1030,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                   width: 16,
                   height: 16,
                   colorFilter: ColorFilter.mode(
-                    completada ? BioWayColors.primaryGreen : Colors.grey[400]!,
+                    completada ? BioWayColors.navGreen : Colors.grey[400]!,
                     BlendMode.srcIn,
                   ),
                 ),
@@ -1047,7 +1040,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: completada ? BioWayColors.primaryGreen : Colors.grey[400],
+                    color: completada ? BioWayColors.navGreen : Colors.grey[400],
                   ),
                 ),
               ],
@@ -1074,7 +1067,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
       case 'Especial':
         return Colors.purple;
       default:
-        return BioWayColors.primaryGreen;
+        return BioWayColors.navGreen;
     }
   }
 

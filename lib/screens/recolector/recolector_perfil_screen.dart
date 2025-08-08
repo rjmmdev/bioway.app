@@ -41,17 +41,10 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
       nivel: BioWayLevels.getLevelByCO2(250.8),
       fechaRegistro: DateTime.now().subtract(const Duration(days: 60)),
       direccion: 'Calle Principal 789',
-      numeroExterior: '789',
-      codigoPostal: '03100',
-      estado: 'Ciudad de México',
       municipio: 'Benito Juárez',
       colonia: 'Del Valle',
-      totalResiduosRecolectados: 45,
       totalKgReciclados: 120.5,
       totalCO2Evitado: 250.8,
-      vehiculo: 'Camioneta Nissan NP300',
-      capacidadKg: 500.0,
-      licenciaConducir: 'CDMX123456789',
     );
   }
 
@@ -111,14 +104,14 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
             style: const TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1A1A),
+              color: Color(0xFF00553F),
             ),
           ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
-              color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
+              color: BioWayColors.navGreen.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(25),
             ),
             child: Row(
@@ -127,7 +120,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
                 Icon(
                   Icons.local_shipping,
                   size: 24,
-                  color: BioWayColors.primaryGreen,
+                  color: BioWayColors.navGreen,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -135,7 +128,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: BioWayColors.primaryGreen,
+                    color: BioWayColors.navGreen,
                   ),
                 ),
               ],
@@ -151,17 +144,14 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            BioWayColors.primaryGreen,
-            BioWayColors.primaryGreen.withValues(alpha: 0.8),
-          ],
+          colors: BioWayColors.backgroundGradientSoft,
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: BioWayColors.primaryGreen.withValues(alpha: 0.3),
+            color: BioWayColors.navGreen.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -215,14 +205,14 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
           style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: Color(0xFF00553F),
           ),
         ),
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 14,
-            color: Colors.white.withValues(alpha: 0.8),
+            color: Color(0xFF00553F),
           ),
         ),
       ],
@@ -251,12 +241,12 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
+                  color: BioWayColors.navGreen.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   Icons.today,
-                  color: BioWayColors.primaryGreen,
+                  color: BioWayColors.navGreen,
                   size: 24,
                 ),
               ),
@@ -279,7 +269,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
                   icon: Icons.location_on,
                   value: '12',
                   label: 'Puntos\nvisitados',
-                  color: BioWayColors.primaryGreen,
+                  color: BioWayColors.navGreen,
                 ),
               ),
               const SizedBox(width: 12),
@@ -366,7 +356,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
             children: [
               Icon(
                 Icons.eco,
-                color: BioWayColors.primaryGreen,
+                color: BioWayColors.navGreen,
                 size: 24,
               ),
               const SizedBox(width: 8),
@@ -388,7 +378,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
                   icon: Icons.recycling,
                   value: '${mockUser.totalKgReciclados} kg',
                   label: 'Total recolectado',
-                  color: BioWayColors.primaryGreen,
+                  color: BioWayColors.navGreen,
                 ),
               ),
               const SizedBox(width: 12),
@@ -476,7 +466,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
             children: [
               Icon(
                 Icons.pie_chart,
-                color: BioWayColors.primaryGreen,
+                color: BioWayColors.navGreen,
                 size: 24,
               ),
               const SizedBox(width: 8),

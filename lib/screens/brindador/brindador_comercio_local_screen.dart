@@ -175,7 +175,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1A1A),
+                      color: Color(0xFF007460),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -193,17 +193,14 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      BioWayColors.primaryGreen,
-                      BioWayColors.primaryGreen.withOpacity(0.8),
-                    ],
+                    colors: BioWayColors.backgroundGradientSoft,
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: BioWayColors.primaryGreen.withOpacity(0.3),
+                      color: BioWayColors.navGreen.withOpacity(0.3),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -214,7 +211,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                   children: [
                     const Icon(
                       Icons.account_balance_wallet,
-                      color: Colors.white,
+                      color: Color(0xFF00553F),
                       size: 20,
                     ),
                     const SizedBox(width: 8),
@@ -225,7 +222,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                         Text(
                           '$_userBioCoins',
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: Color(0xFF00553F),
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                             height: 1,
@@ -234,7 +231,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                         const Text(
                           'BioCoins',
                           style: TextStyle(
-                            color: Colors.white70,
+                            color: Color(0xFF00553F),
                             fontSize: 11,
                             height: 1,
                           ),
@@ -255,7 +252,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: _isSearching 
-                    ? BioWayColors.primaryGreen 
+                    ? BioWayColors.navGreen 
                     : Colors.transparent,
                 width: 2,
               ),
@@ -276,7 +273,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                       prefixIcon: Icon(
                         Icons.search,
                         color: _isSearching 
-                            ? BioWayColors.primaryGreen 
+                            ? BioWayColors.navGreen 
                             : Colors.grey[400],
                       ),
                       suffixIcon: _searchController.text.isNotEmpty
@@ -305,7 +302,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                   margin: const EdgeInsets.only(right: 8),
                   decoration: BoxDecoration(
                     color: _showFilters 
-                        ? BioWayColors.primaryGreen 
+                        ? BioWayColors.navGreen 
                         : Colors.transparent,
                     shape: BoxShape.circle,
                   ),
@@ -363,12 +360,12 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected 
-              ? BioWayColors.primaryGreen 
+              ? BioWayColors.navGreen 
               : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected 
-                ? BioWayColors.primaryGreen 
+                ? BioWayColors.navGreen 
                 : Colors.grey[300]!,
           ),
         ),
@@ -418,7 +415,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A1A),
+              color: Colors.white,
             ),
           ),
           const SizedBox(height: 12),
@@ -438,7 +435,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                       isExpanded: true,
                       icon: Icon(
                         Icons.arrow_drop_down,
-                        color: BioWayColors.primaryGreen,
+                        color: BioWayColors.navGreen,
                       ),
                       items: [
                         const DropdownMenuItem(
@@ -488,7 +485,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                       isExpanded: true,
                       icon: Icon(
                         Icons.arrow_drop_down,
-                        color: BioWayColors.primaryGreen,
+                        color: BioWayColors.navGreen,
                       ),
                       items: [
                         const DropdownMenuItem(
@@ -535,7 +532,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A1A),
+                    color: Colors.white,
                   ),
                 ),
                 TextButton(
@@ -545,7 +542,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                   child: Text(
                     'Ver todas',
                     style: TextStyle(
-                      color: BioWayColors.primaryGreen,
+                      color: BioWayColors.navGreen,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -604,13 +601,14 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: BioWayColors.primaryGreen.withOpacity(0.1),
+                          color: BioWayColors.navGreen.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(
+                        child: Text(
                           producto.icono,
-                          color: BioWayColors.primaryGreen,
-                          size: 24,
+                          style: TextStyle(
+                            fontSize: 24,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -623,7 +621,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A1A1A),
+                                color: Colors.white,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -655,7 +653,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A1A1A),
+                              color: Colors.white,
                             ),
                           ),
                           Text(
@@ -671,7 +669,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: BioWayColors.primaryGreen,
+                          color: BioWayColors.navGreen,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
@@ -754,7 +752,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A1A),
+              color: Color(0xFF007460),
             ),
           ),
           const SizedBox(height: 16),
@@ -803,7 +801,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      BioWayColors.primaryGreen.withOpacity(0.1),
+                      BioWayColors.navGreen.withOpacity(0.1),
                       BioWayColors.lightGreen.withOpacity(0.1),
                     ],
                     begin: Alignment.topLeft,
@@ -813,7 +811,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                 ),
                 child: Icon(
                   _getIconForCategory(comercio.categoria),
-                  color: BioWayColors.primaryGreen,
+                  color: BioWayColors.navGreen,
                   size: 28,
                 ),
               ),
@@ -828,7 +826,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A1A),
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -883,7 +881,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: BioWayColors.primaryGreen,
+                      color: BioWayColors.navGreen,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -961,7 +959,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          BioWayColors.primaryGreen.withOpacity(0.1),
+                          BioWayColors.navGreen.withOpacity(0.1),
                           BioWayColors.lightGreen.withOpacity(0.1),
                         ],
                       ),
@@ -969,7 +967,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                     ),
                     child: Icon(
                       _getIconForCategory(comercio.categoria),
-                      color: BioWayColors.primaryGreen,
+                      color: BioWayColors.navGreen,
                       size: 28,
                     ),
                   ),
@@ -983,7 +981,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF1A1A1A),
+                            color: Colors.white,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -1042,10 +1040,11 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
+              child: Text(
                 producto.icono,
-                color: BioWayColors.primaryGreen,
-                size: 24,
+                style: TextStyle(
+                  fontSize: 24,
+                ),
               ),
             ),
             const SizedBox(width: 16),
@@ -1058,7 +1057,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A1A),
+                      color: Colors.white,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1100,14 +1099,14 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                   children: [
                     Icon(
                       Icons.monetization_on,
-                      color: BioWayColors.primaryGreen,
+                      color: BioWayColors.navGreen,
                       size: 16,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       '${producto.bioCoinsCosto}',
                       style: TextStyle(
-                        color: BioWayColors.primaryGreen,
+                        color: BioWayColors.navGreen,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1163,7 +1162,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              BioWayColors.primaryGreen.withOpacity(0.1),
+                              BioWayColors.navGreen.withOpacity(0.1),
                               BioWayColors.lightGreen.withOpacity(0.1),
                             ],
                             begin: Alignment.topLeft,
@@ -1171,10 +1170,11 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                           ),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
+                        child: Text(
                           producto.icono,
-                          color: BioWayColors.primaryGreen,
-                          size: 48,
+                          style: TextStyle(
+                            fontSize: 48,
+                          ),
                         ),
                       ),
                     ),
@@ -1185,7 +1185,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                         style: const TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A1A1A),
+                          color: Colors.white,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -1216,7 +1216,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF1A1A1A),
+                              color: Colors.white,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -1277,8 +1277,8 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  BioWayColors.primaryGreen.withOpacity(0.1),
-                                  BioWayColors.primaryGreen.withOpacity(0.05),
+                                  BioWayColors.navGreen.withOpacity(0.1),
+                                  BioWayColors.navGreen.withOpacity(0.05),
                                 ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
@@ -1295,7 +1295,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                                       style: TextStyle(
                                         fontSize: 32,
                                         fontWeight: FontWeight.bold,
-                                        color: BioWayColors.primaryGreen,
+                                        color: BioWayColors.navGreen,
                                       ),
                                     ),
                                   ],
@@ -1385,7 +1385,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                           }
                         : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: BioWayColors.primaryGreen,
+                      backgroundColor: BioWayColors.navGreen,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -1431,7 +1431,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A1A),
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 8),
@@ -1449,7 +1449,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                   color: const Color(0xFFF8F9FA),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: BioWayColors.primaryGreen.withOpacity(0.2),
+                    color: BioWayColors.navGreen.withOpacity(0.2),
                     width: 2,
                   ),
                 ),
@@ -1464,7 +1464,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: BioWayColors.primaryGreen.withOpacity(0.1),
+                  color: BioWayColors.navGreen.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
@@ -1474,7 +1474,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A1A1A),
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -1491,14 +1491,14 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                       children: [
                         Icon(
                           Icons.monetization_on,
-                          color: BioWayColors.primaryGreen,
+                          color: BioWayColors.navGreen,
                           size: 20,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           '${producto.bioCoinsCosto} BioCoins',
                           style: TextStyle(
-                            color: BioWayColors.primaryGreen,
+                            color: BioWayColors.navGreen,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1534,7 +1534,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                         _showSuccessMessage();
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: BioWayColors.primaryGreen,
+                        backgroundColor: BioWayColors.navGreen,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
