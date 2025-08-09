@@ -323,7 +323,3 @@ flutter run --verbose
 - API de actualización de modelos OTA
 - Sistema de feedback para mejorar precisión
 - Integración con servicios cloud opcionales
-
-## Conclusión
-
-El sistema de visión artificial de BioWay representa una solución robusta y escalable para la detección automática de materiales reciclables. La arquitectura modular permite futuras expansiones mientras mantiene un rendimiento óptimo en dispositivos móviles actuales.
