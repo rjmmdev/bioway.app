@@ -29,6 +29,12 @@ Crear un ecosistema de reciclaje eficiente, transparente y justo que beneficie a
 
 ## ✨ Características
 
+### 🤖 Visión Artificial Integrada
+- **Escáner Inteligente** con IA para identificación automática de materiales
+- Detección de **18+ categorías** de residuos reciclables
+- Procesamiento en tiempo real con Google ML Kit
+- Funcionamiento offline después de descarga inicial
+
 ### 👥 Tipos de Usuarios
 
 #### 🏠 **Brindadores** (Ciudadanos)
@@ -70,6 +76,10 @@ Crear un ecosistema de reciclaje eficiente, transparente y justo que beneficie a
   - Cloud Firestore
   - Cloud Storage
   - Cloud Functions
+- **Visión Artificial:** Google ML Kit
+  - Image Labeling
+  - On-device Processing
+  - Custom Model Support
 - **Mapas:** Google Maps API
 - **Pagos:** Integración con pasarelas locales
 
@@ -147,10 +157,12 @@ lib/
 │   ├── brindador/      # Módulo ciudadanos
 │   ├── recolector/     # Módulo recolectores
 │   ├── maestro/        # Panel administrativo
-│   └── centro_acopio/  # Gestión de centros
+│   ├── centro_acopio/  # Gestión de centros
+│   └── ai/             # Escáner inteligente con IA
 ├── services/
 │   ├── firebase/       # Servicios Firebase
-│   └── bioway/         # Lógica de negocio
+│   ├── bioway/         # Lógica de negocio
+│   └── ai/             # Servicios de visión artificial
 ├── widgets/            # Componentes reutilizables
 └── utils/              # Utilidades y constantes
 ```
@@ -163,12 +175,15 @@ lib/
 - Sistema de códigos únicos
 - Navegación y UI/UX consistente
 - Estructura de base de datos
+- **Escáner inteligente con IA** para identificación de materiales
+- Sistema de detección multi-nivel con ML Kit
 
 ### 🔧 En Desarrollo
 - Integración de pagos
 - Sistema de notificaciones push
 - Optimización de rutas con IA
 - Gamificación avanzada
+- Mejora continua del modelo de IA con feedback de usuarios
 
 ### 📋 Próximas Características
 - Blockchain para trazabilidad
@@ -182,6 +197,7 @@ Este es un proyecto privado en desarrollo. Para contribuir o reportar problemas,
 
 ## 📄 Documentación Adicional
 
+- [`AI_SCANNER_ARCHITECTURE.md`](docs/AI_SCANNER_ARCHITECTURE.md) - **Arquitectura completa del sistema de visión artificial**
 - [`DATABASE_STRUCTURE.md`](DATABASE_STRUCTURE.md) - Estructura completa de la base de datos
 - [`RESTAURAR_FIREBASE.md`](RESTAURAR_FIREBASE.md) - Guía para activar Firebase en producción
 
