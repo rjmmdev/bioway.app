@@ -6,6 +6,7 @@ import '../../../utils/colors.dart';
 import '../../../models/bioway/horario.dart';
 import '../../../models/bioway/user_state.dart';
 import 'brindador_residuos_grid_screen.dart';
+import 'waste_scanner_screen.dart';
 
 class BrindadorDashboardScreen extends StatefulWidget {
   const BrindadorDashboardScreen({super.key});
@@ -15,11 +16,14 @@ class BrindadorDashboardScreen extends StatefulWidget {
 }
 
 class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen> 
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late List<Horario> _horarios;
   late UserState _userState;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+  late AnimationController _fabAnimationController;
+  late Animation<double> _fabScaleAnimation;
+  late Animation<double> _fabRotationAnimation;
   
   int _bioCoins = 1250;
   int _userStatus = 0;
@@ -42,6 +46,28 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
       curve: Curves.easeInOut,
     ));
     _animationController.repeat(reverse: true);
+    
+    // Animación para el FAB
+    _fabAnimationController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    );
+    _fabScaleAnimation = Tween<double>(
+      begin: 0.9,
+      end: 1.1,
+    ).animate(CurvedAnimation(
+      parent: _fabAnimationController,
+      curve: Curves.elasticInOut,
+    ));
+    _fabRotationAnimation = Tween<double>(
+      begin: 0,
+      end: 0.05,
+    ).animate(CurvedAnimation(
+      parent: _fabAnimationController,
+      curve: Curves.easeInOut,
+    ));
+    _fabAnimationController.repeat(reverse: true);
+    
     _initializeMockData();
   }
 
@@ -55,6 +81,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
   void dispose() {
     _pageController.dispose();
     _animationController.dispose();
+    _fabAnimationController.dispose();
     super.dispose();
   }
 
@@ -87,7 +114,93 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
           ],
         ),
       ),
+      floatingActionButton: _buildFloatingActionButton(),
     );
+  }
+
+  Widget _buildFloatingActionButton() {
+    return AnimatedBuilder(
+      animation: _fabAnimationController,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _fabScaleAnimation.value,
+          child: Transform.rotate(
+            angle: _fabRotationAnimation.value,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [
+                    BioWayColors.primary,
+                    BioWayColors.primaryLight,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: BioWayColors.primary.withOpacity(0.4),
+                    blurRadius: 20,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 4),
+                  ),
+                  BoxShadow(
+                    color: BioWayColors.primary.withOpacity(0.2),
+                    blurRadius: 30,
+                    spreadRadius: 5,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: FloatingActionButton(
+                onPressed: _openScanner,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.white.withOpacity(0.2),
+                        Colors.transparent,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.qr_code_scanner,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openScanner() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const WasteScannerScreen(),
+      ),
+    );
+    
+    if (result != null && mounted) {
+      // Manejar el resultado del escaneo si es necesario
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Material detectado: ${result.category}'),
+          backgroundColor: BioWayColors.primary,
+        ),
+      );
+    }
   }
 
   Widget _buildHeader() {

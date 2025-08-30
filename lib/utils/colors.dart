@@ -144,6 +144,20 @@ class BioWayColors {
 
   /// Azul turquesa para información
   static const Color info = Color(0xFF00C4E5);
+  
+  // ===== ALIAS PARA COMPATIBILIDAD =====
+  
+  /// Alias para el color primario principal
+  static const Color primary = primaryGreen;
+  
+  /// Alias para el color primario claro
+  static const Color primaryLight = lightGreen;
+  
+  /// Alias para el color primario oscuro
+  static const Color primaryDark = darkGreen;
+  
+  /// Alias para el color secundario
+  static const Color secondary = turquoise;
 
   // ===== COLORES DE MATERIALES (RECICLAJE) - ACTUALIZADOS =====
 
