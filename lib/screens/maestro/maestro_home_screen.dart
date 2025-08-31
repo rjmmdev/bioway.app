@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/colors.dart';
 import '../../../services/user_session_service.dart';
+import '../../../l10n/app_localizations.dart';
 import 'empresas/empresas_list_screen.dart';
 import 'materiales/materiales_list_screen.dart';
 import 'usuarios/usuarios_list_screen.dart';
@@ -87,8 +88,8 @@ class _MaestroHomeScreenState extends State<MaestroHomeScreen> {
       appBar: AppBar(
         backgroundColor: BioWayColors.navGreen,
         elevation: 0,
-        title: const Text(
-          'Panel Maestro BioWay',
+        title: Text(
+          AppLocalizations.of(context)?.masterPanel ?? 'Panel Maestro BioWay',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -158,15 +159,15 @@ class _MaestroHomeScreenState extends State<MaestroHomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Bienvenido',
+                          Text(
+                            AppLocalizations.of(context)?.welcome ?? 'Bienvenido',
                             style: TextStyle(
                               color: Color(0xFF00553F),
                               fontSize: 14,
                             ),
                           ),
                           Text(
-                            _adminName,
+                            AppLocalizations.of(context)?.adminBioWay ?? _adminName,
                             style: const TextStyle(
                               color: Color(0xFF00553F),
                               fontSize: 20,
@@ -182,8 +183,8 @@ class _MaestroHomeScreenState extends State<MaestroHomeScreen> {
               const SizedBox(height: 24),
 
               // Menu Grid
-              const Text(
-                'Gestión del Sistema',
+              Text(
+                AppLocalizations.of(context)?.systemManagement ?? 'Gestión del Sistema',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -199,8 +200,8 @@ class _MaestroHomeScreenState extends State<MaestroHomeScreen> {
                 childAspectRatio: 1,
                 children: [
                   _buildMenuCard(
-                    title: 'Empresas',
-                    subtitle: 'Gestionar empresas',
+                    title: AppLocalizations.of(context)?.companies ?? 'Empresas',
+                    subtitle: AppLocalizations.of(context)?.manageCompanies ?? 'Gestionar empresas',
                     icon: Icons.business,
                     color: Colors.blue,
                     onTap: () {
@@ -213,8 +214,8 @@ class _MaestroHomeScreenState extends State<MaestroHomeScreen> {
                     },
                   ),
                   _buildMenuCard(
-                    title: 'Materiales',
-                    subtitle: 'Gestionar reciclables',
+                    title: AppLocalizations.of(context)?.materials ?? 'Materiales',
+                    subtitle: AppLocalizations.of(context)?.manageRecyclables ?? 'Gestionar reciclables',
                     icon: Icons.recycling,
                     color: Colors.green,
                     onTap: () {
@@ -227,8 +228,8 @@ class _MaestroHomeScreenState extends State<MaestroHomeScreen> {
                     },
                   ),
                   _buildMenuCard(
-                    title: 'Usuarios',
-                    subtitle: 'Administrar usuarios',
+                    title: AppLocalizations.of(context)?.users ?? 'Usuarios',
+                    subtitle: AppLocalizations.of(context)?.manageUsers ?? 'Administrar usuarios',
                     icon: Icons.people,
                     color: Colors.orange,
                     onTap: () {
@@ -241,8 +242,8 @@ class _MaestroHomeScreenState extends State<MaestroHomeScreen> {
                     },
                   ),
                   _buildMenuCard(
-                    title: 'Horarios',
-                    subtitle: 'Horarios de recolección',
+                    title: AppLocalizations.of(context)?.schedules ?? 'Horarios',
+                    subtitle: AppLocalizations.of(context)?.collectionSchedules ?? 'Horarios de recolección',
                     icon: Icons.schedule,
                     color: Colors.purple,
                     onTap: () {
@@ -255,8 +256,8 @@ class _MaestroHomeScreenState extends State<MaestroHomeScreen> {
                     },
                   ),
                   _buildMenuCard(
-                    title: 'Disponibilidad',
-                    subtitle: 'Estados y municipios',
+                    title: AppLocalizations.of(context)?.availability ?? 'Disponibilidad',
+                    subtitle: AppLocalizations.of(context)?.statesAndMunicipalities ?? 'Estados y municipios',
                     icon: Icons.map,
                     color: Colors.teal,
                     onTap: () {
@@ -269,8 +270,8 @@ class _MaestroHomeScreenState extends State<MaestroHomeScreen> {
                     },
                   ),
                   _buildMenuCard(
-                    title: 'Configuración',
-                    subtitle: 'Ajustes del sistema',
+                    title: AppLocalizations.of(context)?.configuration ?? 'Configuración',
+                    subtitle: AppLocalizations.of(context)?.systemSettings ?? 'Ajustes del sistema',
                     icon: Icons.settings,
                     color: Colors.grey,
                     onTap: () {
@@ -287,8 +288,8 @@ class _MaestroHomeScreenState extends State<MaestroHomeScreen> {
               const SizedBox(height: 24),
 
               // Acciones rápidas
-              const Text(
-                'Acciones Rápidas',
+              Text(
+                AppLocalizations.of(context)?.quickActions ?? 'Acciones Rápidas',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -323,8 +324,8 @@ class _MaestroHomeScreenState extends State<MaestroHomeScreen> {
                           color: Colors.red,
                         ),
                       ),
-                      title: const Text('Limpiar usuarios inactivos'),
-                      subtitle: const Text('Eliminar cuentas con 3+ meses de inactividad'),
+                      title: Text(AppLocalizations.of(context)?.cleanInactiveUsers ?? 'Limpiar usuarios inactivos'),
+                      subtitle: Text(AppLocalizations.of(context)?.deleteInactiveAccounts ?? 'Eliminar cuentas con 3+ meses de inactividad'),
                       trailing: const Icon(Icons.arrow_forward_ios),
                       onTap: () {
                         _showInactivityCleanupDialog();
@@ -343,8 +344,8 @@ class _MaestroHomeScreenState extends State<MaestroHomeScreen> {
                           color: Colors.blue,
                         ),
                       ),
-                      title: const Text('Respaldo de datos'),
-                      subtitle: const Text('Exportar información del sistema'),
+                      title: Text(AppLocalizations.of(context)?.dataBackup ?? 'Respaldo de datos'),
+                      subtitle: Text(AppLocalizations.of(context)?.exportSystemInfo ?? 'Exportar información del sistema'),
                       trailing: const Icon(Icons.arrow_forward_ios),
                       onTap: () {
                         // TODO: Implementar respaldo
@@ -364,15 +365,14 @@ class _MaestroHomeScreenState extends State<MaestroHomeScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Limpiar usuarios inactivos'),
-        content: const Text(
-          '¿Está seguro de eliminar todas las cuentas con más de 3 meses de inactividad?\n\n'
-          'Esta acción no se puede deshacer.',
+        title: Text(AppLocalizations.of(context)?.cleanInactiveUsers ?? 'Limpiar usuarios inactivos'),
+        content: Text(
+          AppLocalizations.of(context)?.sureDeleteInactive ?? '¿Está seguro de eliminar todas las cuentas con más de 3 meses de inactividad?\n\nEsta acción no se puede deshacer.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            child: Text(AppLocalizations.of(context)?.cancel ?? 'Cancelar'),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -382,8 +382,8 @@ class _MaestroHomeScreenState extends State<MaestroHomeScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
             ),
-            child: const Text(
-              'Eliminar',
+            child: Text(
+              AppLocalizations.of(context)?.delete ?? 'Eliminar',
               style: TextStyle(color: Colors.white),
             ),
           ),
@@ -395,8 +395,8 @@ class _MaestroHomeScreenState extends State<MaestroHomeScreen> {
   void _performInactivityCleanup() async {
     // TODO: Implementar limpieza de usuarios inactivos
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Limpieza de usuarios inactivos iniciada...'),
+      SnackBar(
+        content: Text(AppLocalizations.of(context)?.cleaningStarted ?? 'Limpieza de usuarios inactivos iniciada...'),
       ),
     );
   }

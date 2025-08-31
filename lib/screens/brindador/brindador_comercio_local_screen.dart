@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../../utils/colors.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../models/bioway/comercio.dart';
 import '../../../models/bioway/producto_descuento.dart';
 
@@ -170,8 +171,8 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Comercio Local',
+                  Text(
+                    AppLocalizations.of(context)?.localCommerce ?? 'Comercio Local',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -180,7 +181,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Descuentos exclusivos para ti',
+                    AppLocalizations.of(context)?.exclusiveDiscounts ?? 'Descuentos exclusivos para ti',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey[600],
@@ -265,7 +266,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                     focusNode: _searchFocusNode,
                     onChanged: (_) => _filterComercios(),
                     decoration: InputDecoration(
-                      hintText: 'Buscar tiendas, restaurantes...',
+                      hintText: AppLocalizations.of(context)?.searchStores ?? 'Buscar tiendas, restaurantes...',
                       hintStyle: TextStyle(
                         color: Colors.grey[500],
                         fontSize: 15,
@@ -410,8 +411,8 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Filtrar por ubicación',
+          Text(
+            AppLocalizations.of(context)?.filterByLocation ?? 'Filtrar por ubicación',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -438,9 +439,9 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                         color: BioWayColors.navGreen,
                       ),
                       items: [
-                        const DropdownMenuItem(
+                        DropdownMenuItem(
                           value: null,
-                          child: Text('Todos los estados'),
+                          child: Text(AppLocalizations.of(context)?.allStates ?? 'Todos los estados'),
                         ),
                         ..._estados.map((estado) => DropdownMenuItem(
                           value: estado,
@@ -488,9 +489,9 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                         color: BioWayColors.navGreen,
                       ),
                       items: [
-                        const DropdownMenuItem(
+                        DropdownMenuItem(
                           value: null,
-                          child: Text('Todos los municipios'),
+                          child: Text(AppLocalizations.of(context)?.allMunicipalities ?? 'Todos los municipios'),
                         ),
                         ..._municipios.map((municipio) => DropdownMenuItem(
                           value: municipio,
@@ -527,8 +528,8 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  '🔥 Ofertas del día',
+                Text(
+                  '🔥 ${AppLocalizations.of(context)?.dailyOffers ?? 'Ofertas del día'}',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -540,7 +541,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                     // Ver todas las ofertas
                   },
                   child: Text(
-                    'Ver todas',
+                    AppLocalizations.of(context)?.seeAll ?? 'Ver todas',
                     style: TextStyle(
                       color: BioWayColors.navGreen,
                       fontWeight: FontWeight.w600,
@@ -722,7 +723,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
             ),
             const SizedBox(height: 16),
             Text(
-              'No se encontraron comercios',
+              AppLocalizations.of(context)?.noStoresFound ?? 'No se encontraron comercios',
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey[600],
@@ -731,7 +732,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
             ),
             const SizedBox(height: 8),
             Text(
-              'Intenta con otros filtros',
+              AppLocalizations.of(context)?.tryOtherFilters ?? 'Intenta con otros filtros',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[500],
@@ -748,7 +749,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Comercios cerca de ti (${_comerciosFiltrados.length})',
+            '${AppLocalizations.of(context)?.storesNearYou ?? 'Comercios cerca de ti'} (${_comerciosFiltrados.length})',
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -885,7 +886,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '${productosComercio.length} ofertas',
+                      '${productosComercio.length} ${AppLocalizations.of(context)?.offers ?? 'ofertas'}',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -1392,8 +1393,8 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                       ),
                       elevation: 0,
                     ),
-                    child: const Text(
-                      'Canjear descuento',
+                    child: Text(
+                      AppLocalizations.of(context)?.redeemDiscount ?? 'Canjear descuento',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -1426,8 +1427,8 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Tu código de descuento',
+              Text(
+                AppLocalizations.of(context)?.discountCode ?? 'Tu código de descuento',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -1436,7 +1437,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
               ),
               const SizedBox(height: 8),
               Text(
-                'Muéstralo en el comercio',
+                AppLocalizations.of(context)?.showAtStore ?? 'Muéstralo en el comercio',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[600],
@@ -1518,7 +1519,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       child: Text(
-                        'Cancelar',
+                        AppLocalizations.of(context)?.cancel ?? 'Cancelar',
                         style: TextStyle(
                           color: Colors.grey[600],
                           fontSize: 16,
@@ -1541,8 +1542,8 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                         ),
                         elevation: 0,
                       ),
-                      child: const Text(
-                        'Ya lo usé',
+                      child: Text(
+                        AppLocalizations.of(context)?.alreadyUsed ?? 'Ya lo usé',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -1563,13 +1564,13 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
   void _showSuccessMessage() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Row(
+        content: Row(
           children: [
             Icon(Icons.check_circle, color: Colors.white),
             SizedBox(width: 12),
             Expanded(
               child: Text(
-                '¡Descuento canjeado exitosamente!',
+                AppLocalizations.of(context)?.discountRedeemed ?? '¡Descuento canjeado exitosamente!',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,

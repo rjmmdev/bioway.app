@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../../../utils/colors.dart';
+import 'package:easy_localization/easy_localization.dart';
+import '../../../utils/colors.dart';
 
 class BrindadorBottomNavigationBar extends StatelessWidget {
   final int currentIndex;
@@ -35,19 +36,19 @@ class BrindadorBottomNavigationBar extends StatelessWidget {
               _buildNavItem(
                 index: 0,
                 icon: Icons.home_rounded,
-                label: 'Inicio',
+                label: 'home'.tr(),
                 isSelected: currentIndex == 0,
               ),
               _buildNavItem(
                 index: 1,
                 icon: Icons.store_rounded,
-                label: 'Comercio',
+                label: 'commerce'.tr(),
                 isSelected: currentIndex == 1,
               ),
               _buildNavItem(
                 index: 2,
                 svgAsset: 'assets/logos/bioway_logo.svg',
-                label: 'Perfil',
+                label: 'profile'.tr(),
                 isSelected: currentIndex == 2,
                 isSvg: true,
               ),

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../../utils/colors.dart';
-import '../../../models/bioway/horario.dart';
-import '../../../models/bioway/user_state.dart';
+import 'package:easy_localization/easy_localization.dart';
+import '../../utils/colors.dart';
+import '../../models/bioway/horario.dart';
+import '../../models/bioway/user_state.dart';
 import 'brindador_residuos_grid_screen.dart';
 import 'waste_scanner_screen.dart';
+import '../../l10n/app_localizations.dart';
 
 class BrindadorDashboardScreen extends StatefulWidget {
   const BrindadorDashboardScreen({super.key});
@@ -196,7 +198,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
       // Manejar el resultado del escaneo si es necesario
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Material detectado: ${result.category}'),
+          content: Text('${'material_detected'.tr()}: ${result.category}'),
           backgroundColor: BioWayColors.primary,
         ),
       );
@@ -219,7 +221,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Buenos días,",
+                'hello'.tr() + ',',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[600],
@@ -315,7 +317,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          'HOY - ${horario.dia}',
+                          'today'.tr() + ' - ${horario.dia}',
                           style: const TextStyle(
                             color: Color(0xFF00553F),
                             fontSize: 13,
@@ -436,8 +438,8 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                 ),
                 if (!canRecycle && horario == null) ...[
                   const SizedBox(height: 16),
-                  const Text(
-                    'Revisa el calendario para próximas recolecciones',
+                  Text(
+                    'check_calendar'.tr(),
                     style: TextStyle(
                       color: Color(0xFF00553F),
                       fontSize: 14,
@@ -461,7 +463,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            "Calendario de Reciclaje",
+            'recycling_calendar'.tr(),
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -470,7 +472,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
           ),
           const SizedBox(height: 4),
           Text(
-            "Desliza para ver los próximos días",
+            'swipe_to_see_days'.tr(),
             style: TextStyle(
               fontSize: 13,
               color: Colors.grey[600],
@@ -623,9 +625,9 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
             ],
           ),
           const SizedBox(height: 20),
-          _buildDetailRow(Icons.schedule, 'Horario', horario.horario ?? ''),
+          _buildDetailRow(Icons.schedule, 'schedule'.tr(), horario.horario ?? ''),
           const SizedBox(height: 12),
-          _buildDetailRow(Icons.scale, 'Cantidad mínima', horario.cantidadMinima ?? ''),
+          _buildDetailRow(Icons.scale, 'minimum_quantity'.tr(), horario.cantidadMinima ?? ''),
           const SizedBox(height: 12),
           _buildDetailRow(Icons.not_interested, 'No se recibe', horario.qnr ?? ''),
           const SizedBox(height: 20),
@@ -709,8 +711,8 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                 size: 24,
               ),
               const SizedBox(width: 8),
-              const Text(
-                'Tips de Reciclaje',
+              Text(
+                'recycling_tips'.tr(),
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -722,22 +724,22 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
           const SizedBox(height: 16),
           _buildTipCard(
             icon: Icons.clean_hands,
-            title: 'Limpia tus residuos',
-            description: 'Asegúrate de que estén limpios y secos',
+            title: 'clean_waste_title'.tr(),
+            description: 'clean_waste_desc'.tr(),
             color: Colors.blue,
           ),
           const SizedBox(height: 12),
           _buildTipCard(
             icon: Icons.compress,
-            title: 'Compacta el material',
-            description: 'Aplasta botellas y latas para ahorrar espacio',
+            title: 'compact_material_title'.tr(),
+            description: 'compact_material_desc'.tr(),
             color: Colors.green,
           ),
           const SizedBox(height: 12),
           _buildTipCard(
             icon: Icons.category,
-            title: 'Separa correctamente',
-            description: 'Clasifica por tipo de material',
+            title: 'separate_correctly_title'.tr(),
+            description: 'separate_correctly_desc'.tr(),
             color: Colors.purple,
           ),
         ],
@@ -851,9 +853,9 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
   }
 
   String _getLabel(int index) {
-    if (index == 0) return "AYER";
-    if (index == 1) return "HOY";
-    if (index == 2) return "MAÑANA";
+    if (index == 0) return 'yesterday'.tr().toUpperCase();
+    if (index == 1) return 'today'.tr().toUpperCase();
+    if (index == 2) return 'tomorrow'.tr().toUpperCase();
     return "";
   }
 
@@ -862,7 +864,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("No se pudo abrir el enlace")),
+          SnackBar(content: Text('could_not_open_link'.tr())),
         );
       }
     }

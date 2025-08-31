@@ -7,6 +7,7 @@ import 'recepcion_material_screen.dart';
 import 'inventario_screen.dart';
 import 'reportes_screen.dart';
 import 'prepago_screen.dart';
+import '../../l10n/app_localizations.dart';
 
 class CentroAcopioHomeScreen extends StatefulWidget {
   const CentroAcopioHomeScreen({super.key});
@@ -39,7 +40,7 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
       'pago': 77.50,
     },
     {
-      'brindador': 'Juan Pérez',
+      'brindador': 'Raúl',
       'material': 'Cartón',
       'cantidad': 25.0,
       'hora': '09:15 AM',
@@ -68,9 +69,9 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
               pinned: true,
               backgroundColor: BioWayColors.navGreen,
               flexibleSpace: FlexibleSpaceBar(
-                title: const Text(
-                  'Centro de Acopio',
-                  style: TextStyle(
+                title: Text(
+                  AppLocalizations.of(context)?.collectionCenter ?? 'Centro de Acopio',
+                  style: const TextStyle(
                     color: Color(0xFF00553F),
                     fontWeight: FontWeight.bold,
                     fontSize: 20,

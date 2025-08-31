@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../../utils/colors.dart';
-import '../../../services/bioway/bioway_auth_service.dart';
-import '../../../services/firebase/auth_service.dart';
+import 'package:easy_localization/easy_localization.dart';
+import '../../utils/colors.dart';
+import '../../services/bioway/bioway_auth_service.dart';
+import '../../services/firebase/auth_service.dart';
+import '../../l10n/app_localizations.dart';
 
 class BioWayRegisterScreen extends StatefulWidget {
   const BioWayRegisterScreen({super.key});
@@ -57,18 +59,35 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
   bool _obscureConfirmPassword = true;
 
   // Zonas disponibles para recolectores
-  final List<String> _zones = [
-    'Centro',
-    'Norte',
-    'Sur', 
-    'Este',
-    'Oeste',
-    'Polanco',
-    'Condesa',
-    'Roma Norte',
-    'Coyoacán',
-    'Satelite',
-  ];
+  List<String> get _zones {
+    final loc = AppLocalizations.of(context);
+    if (loc == null) {
+      return [
+        'Centro',
+        'Norte',
+        'Sur', 
+        'Este',
+        'Oeste',
+        'Polanco',
+        'Condesa',
+        'Roma Norte',
+        'Coyoacán',
+        'Satelite',
+      ];
+    }
+    return [
+      loc.locale.languageCode == 'es' ? 'Centro' : 'Center',
+      loc.locale.languageCode == 'es' ? 'Norte' : 'North',
+      loc.locale.languageCode == 'es' ? 'Sur' : 'South', 
+      loc.locale.languageCode == 'es' ? 'Este' : 'East',
+      loc.locale.languageCode == 'es' ? 'Oeste' : 'West',
+      loc.locale.languageCode == 'es' ? 'Polanco' : 'Polanco',
+      loc.locale.languageCode == 'es' ? 'Condesa' : 'Condesa',
+      loc.locale.languageCode == 'es' ? 'Roma Norte' : 'Roma Norte',
+      loc.locale.languageCode == 'es' ? 'Coyoacán' : 'Coyoacán',
+      loc.locale.languageCode == 'es' ? 'Satélite' : 'Satellite',
+    ];
+  }
 
   // Servicios
   late final BioWayAuthService _bioWayAuthService;
@@ -137,7 +156,8 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
   void _nextPage() {
     if (_currentPage == 0) {
       if (_selectedUserType == null) {
-        _showError('Por favor selecciona un tipo de usuario');
+        final loc = AppLocalizations.of(context);
+        _showError(loc?.selectUserType ?? 'select_user_type'.tr());
         return;
       }
       _animateToPage(1);
@@ -177,13 +197,14 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
   }
 
   Future<void> _handleRegister() async {
+    final loc = AppLocalizations.of(context);
     if (!_acceptedTerms) {
-      _showError('Debes aceptar los términos y condiciones');
+      _showError(loc?.acceptTerms ?? 'Debes aceptar los términos y condiciones');
       return;
     }
 
     if (_passwordController.text != _confirmPasswordController.text) {
-      _showError('Las contraseñas no coinciden');
+      _showError(loc?.passwordsDontMatch ?? 'Las contraseñas no coinciden');
       return;
     }
 
@@ -201,7 +222,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
             children: [
               const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 12),
-              Text('Registro exitoso como ${_selectedUserType == 'brindador' ? 'Brindador' : 'Recolector'}'),
+              Text('registration_success'.tr()),
             ],
           ),
           backgroundColor: BioWayColors.success,
@@ -303,8 +324,8 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                       height: 50,
                     ),
                     const SizedBox(width: 12),
-                    const Text(
-                      'Registro',
+                    Text(
+                      'register'.tr(),
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -375,6 +396,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
   }
 
   Widget _buildUserTypeStep() {
+    final loc = AppLocalizations.of(context);
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, child) {
@@ -392,9 +414,11 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                     color: Colors.white,
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    '¿Cómo participarás en BioWay?',
-                    style: TextStyle(
+                  Text(
+                    loc?.locale.languageCode == 'es' 
+                        ? '¿Cómo participarás en BioWay?'
+                        : 'How will you participate in BioWay?',
+                    style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -403,7 +427,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Selecciona tu rol en la comunidad',
+                    loc?.selectRole ?? 'Selecciona tu rol en la comunidad',
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.white.withValues(alpha: 0.9),
@@ -414,9 +438,9 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                   
                   _buildUserTypeCard(
                     icon: Icons.home,
-                    title: 'Brindador',
-                    subtitle: 'Recicla desde casa',
-                    description: 'Separa residuos, agenda recolecciones y gana recompensas',
+                    title: loc?.brindador ?? 'Brindador',
+                    subtitle: loc?.recycleFromHome ?? 'Recicla desde casa',
+                    description: loc?.separateWaste ?? 'Separa residuos, agenda recolecciones y gana recompensas',
                     value: 'brindador',
                     isSelected: _selectedUserType == 'brindador',
                   ),
@@ -425,9 +449,9 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                   
                   _buildUserTypeCard(
                     icon: Icons.local_shipping,
-                    title: 'Recolector',
-                    subtitle: 'Recolecta materiales',
-                    description: 'Accede a materiales pre-separados y optimiza tus rutas',
+                    title: loc?.recolector ?? 'Recolector',
+                    subtitle: loc?.collectMaterials ?? 'Recolecta materiales',
+                    description: loc?.accessPreseparated ?? 'Accede a materiales pre-separados y optimiza tus rutas',
                     value: 'recolector',
                     isSelected: _selectedUserType == 'recolector',
                   ),
@@ -790,7 +814,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                             ],
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Requerido';
+                                return 'required'.tr();
                               }
                               if (value.length != 5) {
                                 return '5 dígitos';
@@ -807,7 +831,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                             icon: Icons.apartment,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Requerido';
+                                return 'required'.tr();
                               }
                               return null;
                             },
@@ -827,7 +851,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                             icon: Icons.location_city,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Requerido';
+                                return 'required'.tr();
                               }
                               return null;
                             },
@@ -841,7 +865,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                             icon: Icons.map,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Requerido';
+                                return 'required'.tr();
                               }
                               return null;
                             },

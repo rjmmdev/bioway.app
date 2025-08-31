@@ -24,7 +24,8 @@
       "Bash(flutter analyze:*)",
       "Bash(./gradlew:*)",
       "Bash(flutter clean:*)",
-      "Bash(flutter run:*)"
+      "Bash(flutter run:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": []
   }

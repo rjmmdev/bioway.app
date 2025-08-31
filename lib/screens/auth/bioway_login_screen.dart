@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../../utils/colors.dart';
-import '../../../services/firebase/auth_service.dart';
-import '../../../services/firebase/firebase_manager.dart';
-import '../../../services/bioway/bioway_auth_service.dart';
+import '../../utils/colors.dart';
+import '../../l10n/app_localizations.dart';
+import '../../services/firebase/auth_service.dart';
+import '../../services/bioway/bioway_auth_service.dart';
 import 'bioway_register_screen.dart';
 import '../brindador/brindador_main_screen.dart';
 import '../recolector/recolector_main_screen.dart';
@@ -137,7 +137,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 12),
-                Text('Acceso exitoso'),
+                Text(AppLocalizations.of(context)?.success ?? 'Éxito'),
               ],
             ),
             backgroundColor: BioWayColors.success,
@@ -175,7 +175,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
   void _handleForgotPassword() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Te enviaremos un enlace de recuperación'),
+        content: Text(AppLocalizations.of(context)?.forgotPassword ?? '¿Olvidaste tu contraseña?'),
         backgroundColor: BioWayColors.info,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
@@ -224,52 +224,52 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
           child: Center(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Logo y título
-                  AnimatedBuilder(
-                    animation: _logoAnimationController,
-                    builder: (context, child) {
-                      return Transform.scale(
-                        scale: _logoScaleAnimation.value,
-                        child: Column(
-                          children: [
-                            SvgPicture.asset(
-                              'assets/logos/bioway_logo.svg',
-                              width: 100,
-                              height: 100,
-                            ),
-                            const SizedBox(height: 24),
-                            Text(
-                              'Hola de nuevo',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black.withValues(alpha: 0.3),
-                                    offset: const Offset(0, 2),
-                                    blurRadius: 4,
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Logo y título
+                      AnimatedBuilder(
+                        animation: _logoAnimationController,
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: _logoScaleAnimation.value,
+                            child: Column(
+                              children: [
+                                SvgPicture.asset(
+                                  'assets/logos/bioway_logo.svg',
+                                  width: 100,
+                                  height: 100,
+                                ),
+                                const SizedBox(height: 24),
+                                Text(
+                                  AppLocalizations.of(context)?.welcomeBack ?? 'Bienvenido de nuevo',
+                                  style: TextStyle(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black.withValues(alpha: 0.3),
+                                        offset: const Offset(0, 2),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  AppLocalizations.of(context)?.loginToContinue ?? 'Inicia sesión para continuar',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Ingresa tus credenciales para continuar',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white.withValues(alpha: 0.9),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                          );
+                        },
+                      ),
                   
                   const SizedBox(height: 48),
 
@@ -317,7 +317,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
                                   color: BioWayColors.textDark,
                                 ),
                                 decoration: InputDecoration(
-                                  labelText: 'Correo electrónico',
+                                  labelText: AppLocalizations.of(context)?.email ?? 'Correo electrónico',
                                   labelStyle: TextStyle(
                                     color: BioWayColors.textGrey,
                                   ),
@@ -339,10 +339,10 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Por favor ingresa tu correo';
+                                    return AppLocalizations.of(context)?.invalidEmail ?? 'Por favor ingresa un correo válido';
                                   }
                                   if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                                    return 'Ingresa un correo válido';
+                                    return AppLocalizations.of(context)?.invalidEmail ?? 'Por favor ingresa un correo válido';
                                   }
                                   return null;
                                 },
@@ -375,7 +375,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
                                   color: BioWayColors.textDark,
                                 ),
                                 decoration: InputDecoration(
-                                  labelText: 'Contraseña',
+                                  labelText: AppLocalizations.of(context)?.password ?? 'Contraseña',
                                   labelStyle: TextStyle(
                                     color: BioWayColors.textGrey,
                                   ),
@@ -410,7 +410,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Por favor ingresa tu contraseña';
+                                    return AppLocalizations.of(context)?.passwordTooShort ?? 'La contraseña debe tener al menos 6 caracteres';
                                   }
                                   if (value.length < 6) {
                                     return 'Mínimo 6 caracteres';
@@ -443,7 +443,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
                                       ),
                                     ),
                                     Text(
-                                      'Recordar sesión',
+                                      AppLocalizations.of(context)?.rememberMe ?? 'Recordarme',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 14,
@@ -454,7 +454,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
                                 TextButton(
                                   onPressed: _handleForgotPassword,
                                   child: Text(
-                                    '¿Olvidaste tu contraseña?',
+                                    AppLocalizations.of(context)?.forgotPassword ?? '¿Olvidaste tu contraseña?',
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 14,
@@ -499,7 +499,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
                                             ),
                                           )
                                         : Text(
-                                            'Iniciar Sesión',
+                                            AppLocalizations.of(context)?.login ?? 'Iniciar Sesión',
                                             style: TextStyle(
                                               color: BioWayColors.primaryGreen,
                                               fontSize: 18,
@@ -563,7 +563,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
                                   borderRadius: BorderRadius.circular(16),
                                   child: Center(
                                     child: Text(
-                                      'Crear cuenta nueva',
+                                      AppLocalizations.of(context)?.createAccount ?? 'Crear cuenta',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 18,
@@ -608,7 +608,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
       child: Column(
         children: [
           Text(
-            'ACCESO RÁPIDO (Desarrollo)',
+            AppLocalizations.of(context)?.designMode ?? '🎨 MODO DISEÑO',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.9),
               fontWeight: FontWeight.bold,
@@ -672,7 +672,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
   void _quickNavigate(Widget screen, String role) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Accediendo como $role'),
+        content: Text('${AppLocalizations.of(context)?.navigatingTo ?? 'Navegando a'} $role'),
         backgroundColor: BioWayColors.info,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/bioway_levels.dart';
 import '../../../models/bioway/bioway_user.dart';
+import '../../../l10n/app_localizations.dart';
 
 class RecolectorPerfilScreen extends StatefulWidget {
   const RecolectorPerfilScreen({super.key});
@@ -124,7 +125,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Recolector Certificado',
+                  AppLocalizations.of(context)?.certifiedCollector ?? 'Recolector Certificado',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -165,7 +166,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
               _buildStatItem(
                 icon: Icons.monetization_on,
                 value: '${mockUser.bioCoins}',
-                label: 'BioCoins',
+                label: AppLocalizations.of(context)?.bioCoins ?? 'BioCoins',
                 iconColor: Colors.amber,
               ),
               Container(
@@ -176,7 +177,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
               _buildStatItem(
                 icon: Icons.emoji_events,
                 value: mockUser.nivel,
-                label: 'Nivel',
+                label: AppLocalizations.of(context)?.level ?? 'Nivel',
                 iconColor: Colors.white,
               ),
             ],
@@ -252,7 +253,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Actividad de Hoy',
+                AppLocalizations.of(context)?.todayActivity ?? 'Actividad de Hoy',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -268,7 +269,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
                 child: _buildSimpleStatCard(
                   icon: Icons.location_on,
                   value: '12',
-                  label: 'Puntos\nvisitados',
+                  label: AppLocalizations.of(context)?.visitedPoints ?? 'Puntos\nvisitados',
                   color: BioWayColors.navGreen,
                 ),
               ),
@@ -277,7 +278,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
                 child: _buildSimpleStatCard(
                   icon: Icons.scale,
                   value: '250',
-                  label: 'Kilos\nrecolectados',
+                  label: AppLocalizations.of(context)?.collectedKilos ?? 'Kilos\nrecolectados',
                   color: BioWayColors.info,
                 ),
               ),
@@ -361,7 +362,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Mi Impacto Total',
+                AppLocalizations.of(context)?.myTotalImpact ?? 'Mi Impacto Total',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -377,7 +378,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
                 child: _buildImpactCard(
                   icon: Icons.recycling,
                   value: '${mockUser.totalKgReciclados} kg',
-                  label: 'Total recolectado',
+                  label: AppLocalizations.of(context)?.totalCollected ?? 'Total recolectado',
                   color: BioWayColors.navGreen,
                 ),
               ),
@@ -386,7 +387,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
                 child: _buildImpactCard(
                   icon: Icons.cloud_off,
                   value: '${mockUser.totalCO2Evitado} kg',
-                  label: 'CO₂ evitado',
+                  label: AppLocalizations.of(context)?.co2Avoided ?? 'CO₂ evitado',
                   color: BioWayColors.info,
                 ),
               ),
@@ -471,7 +472,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Materiales Recolectados',
+                AppLocalizations.of(context)?.collectedMaterials ?? 'Materiales Recolectados',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -488,6 +489,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
               weight: entry.value,
               percentage: percentage,
               color: _getMaterialColor(entry.key),
+              context: context,
             );
           }),
         ],
@@ -500,6 +502,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
     required double weight,
     required String percentage,
     required Color color,
+    required BuildContext context,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -527,7 +530,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      _getMaterialName(material),
+                      _getMaterialName(material, context),
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
@@ -605,7 +608,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
                   color: BioWayColors.error,
                 ),
                 title: Text(
-                  'Cerrar Sesión',
+                  AppLocalizations.of(context)?.logout ?? 'Cerrar Sesión',
                   style: TextStyle(
                     color: BioWayColors.error,
                     fontWeight: FontWeight.w600,
@@ -624,8 +627,8 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
                   Icons.delete_forever,
                   color: Colors.red,
                 ),
-                title: const Text(
-                  'Eliminar Cuenta',
+                title: Text(
+                  AppLocalizations.of(context)?.deleteAccount ?? 'Eliminar Cuenta',
                   style: TextStyle(
                     color: Colors.red,
                     fontWeight: FontWeight.w600,
@@ -683,20 +686,20 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
     }
   }
 
-  String _getMaterialName(String material) {
+  String _getMaterialName(String material, BuildContext context) {
     switch (material.toLowerCase()) {
       case 'plastico':
-        return 'Plástico';
+        return AppLocalizations.of(context)?.plastic ?? 'Plástico';
       case 'vidrio':
-        return 'Vidrio';
+        return AppLocalizations.of(context)?.glass ?? 'Vidrio';
       case 'papel':
-        return 'Papel y Cartón';
+        return AppLocalizations.of(context)?.paperCardboard ?? 'Papel y Cartón';
       case 'metal':
-        return 'Metal';
+        return AppLocalizations.of(context)?.metal ?? 'Metal';
       case 'organico':
-        return 'Orgánico';
+        return AppLocalizations.of(context)?.organicWaste ?? 'Orgánico';
       case 'electronico':
-        return 'Electrónico';
+        return AppLocalizations.of(context)?.electronicWaste ?? 'Electrónico';
       default:
         return material;
     }
@@ -717,17 +720,17 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
               size: 28,
             ),
             const SizedBox(width: 8),
-            const Text('Eliminar Cuenta'),
+            Text(AppLocalizations.of(context)?.deleteAccount ?? 'Eliminar Cuenta'),
           ],
         ),
-        content: const Text(
-          '¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer.',
+        content: Text(
+          AppLocalizations.of(context)?.areYouSureDeleteAccount ?? '¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Cancelar',
+              AppLocalizations.of(context)?.cancel ?? 'Cancelar',
               style: TextStyle(color: BioWayColors.textGrey),
             ),
           ),
@@ -742,8 +745,8 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text(
-              'Eliminar',
+            child: Text(
+              AppLocalizations.of(context)?.delete ?? 'Eliminar',
               style: TextStyle(color: Colors.white),
             ),
           ),

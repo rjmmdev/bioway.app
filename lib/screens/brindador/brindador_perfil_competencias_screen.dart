@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../../utils/colors.dart';
-import '../../../models/bioway/bioway_user.dart';
-import '../../../models/bioway/material_reciclable.dart';
-import '../../../models/bio_competencia.dart';
-import '../../../widgets/bioway/bio_celebration_widget.dart';
-import '../../../widgets/bioway/bio_motivational_popup.dart';
+import '../../utils/colors.dart';
+import '../../l10n/app_localizations.dart';
+import '../../models/bioway/bioway_user.dart';
+import '../../models/bioway/material_reciclable.dart';
+import '../../models/bio_competencia.dart';
+import '../../widgets/bioway/bio_celebration_widget.dart';
+import '../../widgets/bioway/bio_motivational_popup.dart';
 
 class BrindadorPerfilCompetenciasScreen extends StatefulWidget {
   const BrindadorPerfilCompetenciasScreen({super.key});
@@ -56,8 +57,8 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
   void _initializeMockData() {
     mockUser = BioWayUser(
       uid: 'mock_123',
-      nombre: 'Juan Pérez',
-      email: 'juan@example.com',
+      nombre: 'Raúl',
+      email: 'raul@example.com',
       tipoUsuario: 'brindador',
       bioCoins: 15780,
       nivel: 'Oro', // Nivel actualizado
@@ -234,9 +235,9 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
       ),
       child: Row(
         children: [
-          _buildPill('Perfil', 'perfil', Icons.person_rounded),
-          _buildPill('Ranking', 'ranking', Icons.leaderboard_rounded),
-          _buildPill('Logros', 'logros', Icons.emoji_events_rounded),
+          _buildPill(AppLocalizations.of(context)?.profile ?? 'Perfil', 'perfil', Icons.person_rounded),
+          _buildPill(AppLocalizations.of(context)?.ranking ?? 'Ranking', 'ranking', Icons.leaderboard_rounded),
+          _buildPill(AppLocalizations.of(context)?.achievements ?? 'Logros', 'logros', Icons.emoji_events_rounded),
         ],
       ),
     );
@@ -277,13 +278,17 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                 size: 20,
                 color: isSelected ? BioWayColors.navGreen : Colors.grey[600],
               ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? BioWayColors.navGreen : Colors.grey[600],
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: isSelected ? BioWayColors.navGreen : Colors.grey[600],
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ],
@@ -531,7 +536,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Tu Impacto Total',
+            AppLocalizations.of(context)?.yourTotalImpact ?? 'Tu Impacto Total',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -545,7 +550,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                 child: _buildImpactCard(
                   icon: Icons.recycling,
                   value: '${mockUser.totalKgReciclados.toStringAsFixed(1)} kg',
-                  label: 'Total reciclado',
+                  label: AppLocalizations.of(context)?.totalRecycled ?? 'Total Reciclado',
                   color: BioWayColors.navGreen,
                 ),
               ),
@@ -554,7 +559,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                 child: _buildImpactCard(
                   icon: Icons.eco,
                   value: '${mockUser.totalCO2Evitado.toStringAsFixed(1)} kg',
-                  label: 'CO₂ evitado',
+                  label: AppLocalizations.of(context)?.co2Saved ?? 'CO₂ Ahorrado',
                   color: Colors.blue,
                 ),
               ),
@@ -581,6 +586,42 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.green[700],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.blue.withOpacity(0.1),
+                  Colors.purple.withOpacity(0.1),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.blue.withOpacity(0.2),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.auto_awesome,
+                  color: Colors.blue[700],
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    AppLocalizations.of(context)?.aiEstimations ?? 'Estimaciones basadas en IA',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.blue[700],
                     ),
                   ),
                 ),
@@ -651,12 +692,12 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Desglose por Material',
+          Text(
+            AppLocalizations.of(context)?.collectedMaterials ?? 'Materiales Recolectados',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: BioWayColors.textDark,
             ),
           ),
           const SizedBox(height: 16),
@@ -750,8 +791,8 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
               ),
             ),
             icon: const Icon(Icons.logout),
-            label: const Text(
-              'Cerrar Sesión',
+            label: Text(
+              AppLocalizations.of(context)?.logout ?? 'Cerrar Sesión',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
@@ -760,7 +801,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
         TextButton(
           onPressed: _showDeleteAccountDialog,
           child: Text(
-            'Eliminar cuenta',
+            AppLocalizations.of(context)?.deleteAccount ?? 'Eliminar cuenta',
             style: TextStyle(
               color: Colors.red[600],
               fontSize: 14,
@@ -1200,7 +1241,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                     size: 28,
                   ),
                   const SizedBox(width: 12),
-                  const Text('Eliminar Cuenta'),
+                  Text(AppLocalizations.of(context)?.deleteAccount ?? 'Eliminar Cuenta'),
                 ],
               ),
               content: Column(
@@ -1247,7 +1288,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                   onPressed: () {
                     Navigator.of(dialogContext).pop();
                   },
-                  child: const Text('Cancelar'),
+                  child: Text(AppLocalizations.of(context)?.cancel ?? 'Cancelar'),
                 ),
                 ElevatedButton(
                   onPressed: isButtonEnabled
@@ -1262,8 +1303,8 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Eliminar',
+                  child: Text(
+                    AppLocalizations.of(context)?.delete ?? 'Eliminar',
                     style: TextStyle(color: Colors.white),
                   ),
                 ),

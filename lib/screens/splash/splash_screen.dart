@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../utils/colors.dart';
-import '../auth/bioway_login_screen.dart';
+import '../language/language_selection_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -126,7 +127,7 @@ class _SplashScreenState extends State<SplashScreen>
         context,
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) =>
-          const BioWayLoginScreen(),
+          const LanguageSelectionScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             // Transición simple de fade para continuidad visual
             return FadeTransition(
@@ -300,7 +301,7 @@ class _SplashScreenState extends State<SplashScreen>
                           const SizedBox(height: 20),
                           // Texto de carga
                           Text(
-                            'Iniciando...',
+                            'loading'.tr(),
                             style: TextStyle(
                               fontSize: 14,
                               color: BioWayColors.darkGreen.withValues(alpha: 0.6),

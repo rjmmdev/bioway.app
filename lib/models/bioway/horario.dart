@@ -59,14 +59,18 @@ class Horario {
       Horario(
         diaSemana: 2,
         nombreDia: 'Martes',
-        activo: false,
-        materiales: [],
+        activo: true,
+        materiales: ['Aluminio', 'Latas', 'Tetra Pak'],
+        horaInicio: const TimeOfDay(hour: 9, minute: 0),
+        horaFin: const TimeOfDay(hour: 13, minute: 0),
+        cantidadMinima: '1.5 kg',
+        qnr: 'Vidrio, residuos peligrosos',
       ),
       Horario(
         diaSemana: 3,
         nombreDia: 'Miércoles',
         activo: true,
-        materiales: ['Vidrio', 'Metal'],
+        materiales: ['Vidrio', 'Metal', 'Acero'],
         horaInicio: const TimeOfDay(hour: 8, minute: 0),
         horaFin: const TimeOfDay(hour: 12, minute: 0),
         cantidadMinima: '3 kg',
@@ -75,8 +79,12 @@ class Horario {
       Horario(
         diaSemana: 4,
         nombreDia: 'Jueves',
-        activo: false,
-        materiales: [],
+        activo: true,
+        materiales: ['Papel', 'Periódico', 'Revistas'],
+        horaInicio: const TimeOfDay(hour: 10, minute: 0),
+        horaFin: const TimeOfDay(hour: 14, minute: 0),
+        cantidadMinima: '2 kg',
+        qnr: 'Plásticos, metal, orgánicos',
       ),
       Horario(
         diaSemana: 5,
@@ -101,8 +109,12 @@ class Horario {
       Horario(
         diaSemana: 7,
         nombreDia: 'Domingo',
-        activo: false,
-        materiales: [],
+        activo: true,
+        materiales: ['Plásticos mixtos', 'Bolsas', 'Envolturas'],
+        horaInicio: const TimeOfDay(hour: 10, minute: 0),
+        horaFin: const TimeOfDay(hour: 12, minute: 0),
+        cantidadMinima: '1.5 kg',
+        qnr: 'Vidrio, metal, orgánicos',
       ),
     ];
   }

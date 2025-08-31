@@ -1,14 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'screens/splash/splash_screen.dart';
+import 'l10n/app_localizations.dart';
+import 'providers/language_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await EasyLocalization.ensureInitialized();
+  
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const BioWayApp());
+  
+  runApp(
+    EasyLocalization(
+      supportedLocales: const [
+        Locale('es', 'MX'),
+        Locale('en', 'US'),
+      ],
+      path: 'assets/translations',
+      fallbackLocale: const Locale('es', 'MX'),
+      child: ChangeNotifierProvider(
+        create: (context) => LanguageProvider(),
+        child: const BioWayApp(),
+      ),
+    ),
+  );
 }
 
 class BioWayApp extends StatelessWidget {
@@ -24,7 +44,23 @@ class BioWayApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        ...context.localizationDelegates,
+      ],
+      supportedLocales: context.supportedLocales,
+      locale: context.locale,
       home: const SplashScreen(),
+      builder: (context, child) {
+        return MediaQuery(
+          // Ignorar las configuraciones de accesibilidad del sistema
+          data: MediaQuery.of(context).copyWith(
+            textScaler: const TextScaler.linear(1.0), // Mantener el tamaño de texto fijo
+            boldText: false, // Ignorar la configuración de texto en negrita
+          ),
+          child: child!,
+        );
+      },
     );
   }
 }

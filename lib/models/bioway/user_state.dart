@@ -33,7 +33,7 @@ class UserState {
         'metal': 8,
       },
       totalRecolecciones: 128,
-      nombre: 'Juan Pérez',
+      nombre: 'Raúl',
       puedeBrindar: true,
     );
   }
