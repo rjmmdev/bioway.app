@@ -19,8 +19,8 @@ class BrindadorDashboardScreen extends StatefulWidget {
 
 class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen> 
     with TickerProviderStateMixin {
-  late List<Horario> _horarios;
-  late UserState _userState;
+  List<Horario> _horarios = [];
+  UserState? _userState;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late AnimationController _fabAnimationController;
@@ -74,9 +74,14 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
   }
 
   void _initializeMockData() {
-    _horarios = Horario.getMockHorarios();
-    _userState = UserState.getMockUserState();
-    _userStatus = 0;
+    // Necesitamos retrasar la inicialización hasta que tengamos contexto
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        _horarios = Horario.getMockHorarios(context);
+        _userState = UserState.getMockUserState();
+        _userStatus = 0;
+      });
+    });
   }
 
   @override
@@ -229,7 +234,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
               ),
               const SizedBox(height: 4),
               Text(
-                _userState.nombre,
+                _userState?.nombre ?? 'Usuario',
                 style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -269,7 +274,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
   }
 
   Widget _buildRecycleNowCard(Horario? horario) {
-    final canRecycle = _userState.puedeBrindar && horario != null;
+    final canRecycle = (_userState?.puedeBrindar ?? false) && horario != null;
     final screenWidth = MediaQuery.of(context).size.width;
     
     return Container(
@@ -853,9 +858,10 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
   }
 
   String _getLabel(int index) {
-    if (index == 0) return 'yesterday'.tr().toUpperCase();
-    if (index == 1) return 'today'.tr().toUpperCase();
-    if (index == 2) return 'tomorrow'.tr().toUpperCase();
+    final loc = AppLocalizations.of(context);
+    if (index == 0) return loc?.yesterday ?? 'AYER';
+    if (index == 1) return loc?.today ?? 'HOY';
+    if (index == 2) return loc?.tomorrow ?? 'MAÑANA';
     return "";
   }
 

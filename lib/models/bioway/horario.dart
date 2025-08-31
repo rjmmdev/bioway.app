@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 
 class Horario {
   final int diaSemana;
@@ -43,14 +44,61 @@ class Horario {
     final displayHour = time.hour > 12 ? time.hour - 12 : (time.hour == 0 ? 12 : time.hour);
     return '$displayHour:$minute $period';
   }
+  
+  static String _translateMaterial(String material, AppLocalizations? loc) {
+    if (loc == null) return material;
+    
+    switch (material) {
+      case 'PET':
+        return loc.petBottles.replaceAll('Botellas ', '');
+      case 'Cartón':
+        return loc.cardboard;
+      case 'Papel':
+        return loc.paper;
+      case 'Aluminio':
+        return loc.aluminum;
+      case 'Latas':
+        return loc.cans;
+      case 'Tetra Pak':
+        return loc.tetraPak;
+      case 'Vidrio':
+        return loc.glass;
+      case 'Metal':
+        return loc.metal;
+      case 'Acero':
+        return loc.steel;
+      case 'Periódico':
+        return loc.newspaper;
+      case 'Revistas':
+        return loc.magazines;
+      case 'HDPE':
+        return loc.hdpe;
+      case 'Todos los materiales':
+        return loc.allMaterials;
+      case 'Plásticos mixtos':
+        return loc.mixedPlastics;
+      case 'Bolsas':
+        return loc.bags;
+      case 'Envolturas':
+        return loc.wrappers;
+      default:
+        return material;
+    }
+  }
+  
+  static List<String> _translateMaterials(List<String> materials, AppLocalizations? loc) {
+    if (loc == null) return materials;
+    return materials.map((m) => _translateMaterial(m, loc)).toList();
+  }
 
-  static List<Horario> getMockHorarios() {
+  static List<Horario> getMockHorarios([BuildContext? context]) {
+    final loc = context != null ? AppLocalizations.of(context) : null;
     return [
       Horario(
         diaSemana: 1,
-        nombreDia: 'Lunes',
+        nombreDia: loc?.monday ?? 'Lunes',
         activo: true,
-        materiales: ['PET', 'Cartón', 'Papel'],
+        materiales: _translateMaterials(['PET', 'Cartón', 'Papel'], loc),
         horaInicio: const TimeOfDay(hour: 8, minute: 0),
         horaFin: const TimeOfDay(hour: 12, minute: 0),
         cantidadMinima: '2 kg',
@@ -58,9 +106,9 @@ class Horario {
       ),
       Horario(
         diaSemana: 2,
-        nombreDia: 'Martes',
+        nombreDia: loc?.tuesday ?? 'Martes',
         activo: true,
-        materiales: ['Aluminio', 'Latas', 'Tetra Pak'],
+        materiales: _translateMaterials(['Aluminio', 'Latas', 'Tetra Pak'], loc),
         horaInicio: const TimeOfDay(hour: 9, minute: 0),
         horaFin: const TimeOfDay(hour: 13, minute: 0),
         cantidadMinima: '1.5 kg',
@@ -68,9 +116,9 @@ class Horario {
       ),
       Horario(
         diaSemana: 3,
-        nombreDia: 'Miércoles',
+        nombreDia: loc?.wednesday ?? 'Miércoles',
         activo: true,
-        materiales: ['Vidrio', 'Metal', 'Acero'],
+        materiales: _translateMaterials(['Vidrio', 'Metal', 'Acero'], loc),
         horaInicio: const TimeOfDay(hour: 8, minute: 0),
         horaFin: const TimeOfDay(hour: 12, minute: 0),
         cantidadMinima: '3 kg',
@@ -78,9 +126,9 @@ class Horario {
       ),
       Horario(
         diaSemana: 4,
-        nombreDia: 'Jueves',
+        nombreDia: loc?.thursday ?? 'Jueves',
         activo: true,
-        materiales: ['Papel', 'Periódico', 'Revistas'],
+        materiales: _translateMaterials(['Papel', 'Periódico', 'Revistas'], loc),
         horaInicio: const TimeOfDay(hour: 10, minute: 0),
         horaFin: const TimeOfDay(hour: 14, minute: 0),
         cantidadMinima: '2 kg',
@@ -88,9 +136,9 @@ class Horario {
       ),
       Horario(
         diaSemana: 5,
-        nombreDia: 'Viernes',
+        nombreDia: loc?.friday ?? 'Viernes',
         activo: true,
-        materiales: ['PET', 'HDPE', 'Cartón'],
+        materiales: _translateMaterials(['PET', 'HDPE', 'Cartón'], loc),
         horaInicio: const TimeOfDay(hour: 8, minute: 0),
         horaFin: const TimeOfDay(hour: 14, minute: 0),
         cantidadMinima: '2.5 kg',
@@ -98,9 +146,9 @@ class Horario {
       ),
       Horario(
         diaSemana: 6,
-        nombreDia: 'Sábado',
+        nombreDia: loc?.saturday ?? 'Sábado',
         activo: true,
-        materiales: ['Todos los materiales'],
+        materiales: _translateMaterials(['Todos los materiales'], loc),
         horaInicio: const TimeOfDay(hour: 9, minute: 0),
         horaFin: const TimeOfDay(hour: 13, minute: 0),
         cantidadMinima: '1 kg',
@@ -108,9 +156,9 @@ class Horario {
       ),
       Horario(
         diaSemana: 7,
-        nombreDia: 'Domingo',
+        nombreDia: loc?.sunday ?? 'Domingo',
         activo: true,
-        materiales: ['Plásticos mixtos', 'Bolsas', 'Envolturas'],
+        materiales: _translateMaterials(['Plásticos mixtos', 'Bolsas', 'Envolturas'], loc),
         horaInicio: const TimeOfDay(hour: 10, minute: 0),
         horaFin: const TimeOfDay(hour: 12, minute: 0),
         cantidadMinima: '1.5 kg',

@@ -1045,6 +1045,104 @@ class AppLocalizations {
   String get warningText => locale.languageCode == 'es'
       ? 'Advertencia'
       : 'Warning';
+      
+  // Days of the week
+  String get monday => locale.languageCode == 'es'
+      ? 'Lunes'
+      : 'Monday';
+      
+  String get tuesday => locale.languageCode == 'es'
+      ? 'Martes'
+      : 'Tuesday';
+      
+  String get wednesday => locale.languageCode == 'es'
+      ? 'Miércoles'
+      : 'Wednesday';
+      
+  String get thursday => locale.languageCode == 'es'
+      ? 'Jueves'
+      : 'Thursday';
+      
+  String get friday => locale.languageCode == 'es'
+      ? 'Viernes'
+      : 'Friday';
+      
+  String get saturday => locale.languageCode == 'es'
+      ? 'Sábado'
+      : 'Saturday';
+      
+  String get sunday => locale.languageCode == 'es'
+      ? 'Domingo'
+      : 'Sunday';
+      
+  String get yesterday => locale.languageCode == 'es'
+      ? 'AYER'
+      : 'YESTERDAY';
+      
+  String get today => locale.languageCode == 'es'
+      ? 'HOY'
+      : 'TODAY';
+      
+  String get tomorrow => locale.languageCode == 'es'
+      ? 'MAÑANA'
+      : 'TOMORROW';
+      
+  // Additional Materials
+  String get allMaterials => locale.languageCode == 'es'
+      ? 'Todos los materiales'
+      : 'All materials';
+      
+  String get mixedPlastics => locale.languageCode == 'es'
+      ? 'Plásticos mixtos'
+      : 'Mixed plastics';
+      
+  String get bags => locale.languageCode == 'es'
+      ? 'Bolsas'
+      : 'Bags';
+      
+  String get wrappers => locale.languageCode == 'es'
+      ? 'Envolturas'
+      : 'Wrappers';
+      
+  String get cans => locale.languageCode == 'es'
+      ? 'Latas'
+      : 'Cans';
+      
+  String get steel => locale.languageCode == 'es'
+      ? 'Acero'
+      : 'Steel';
+      
+  String get newspaper => locale.languageCode == 'es'
+      ? 'Periódico'
+      : 'Newspaper';
+      
+  String get magazines => locale.languageCode == 'es'
+      ? 'Revistas'
+      : 'Magazines';
+      
+  String get hdpe => locale.languageCode == 'es'
+      ? 'HDPE'
+      : 'HDPE';
+      
+  String get minimumQuantity => locale.languageCode == 'es'
+      ? 'Cantidad mínima'
+      : 'Minimum quantity';
+      
+  String get notAccepted => locale.languageCode == 'es'
+      ? 'No aceptamos'
+      : 'Not accepted';
+      
+  String get organics => locale.languageCode == 'es'
+      ? 'Orgánicos'
+      : 'Organics';
+      
+  String get hazardousWaste => locale.languageCode == 'es'
+      ? 'Residuos peligrosos'
+      : 'Hazardous waste';
+      
+  String get noSchedule => locale.languageCode == 'es'
+      ? 'Sin horario'
+      : 'No schedule';
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
