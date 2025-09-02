@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../../utils/colors.dart';
+import '../../../models/bioway/material_reciclable.dart' as bioway_material;
 
 class BrindadorTirarScreen extends StatefulWidget {
   final Map<String, double> selectedMaterials;
@@ -14,43 +16,87 @@ class BrindadorTirarScreen extends StatefulWidget {
   State<BrindadorTirarScreen> createState() => _BrindadorTirarScreenState();
 }
 
-class _BrindadorTirarScreenState extends State<BrindadorTirarScreen> {
+class _BrindadorTirarScreenState extends State<BrindadorTirarScreen> 
+    with TickerProviderStateMixin {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   bool _isProcessing = false;
+  
+  late AnimationController _animationController;
+  late AnimationController _confettiController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _rotateAnimation;
+  
+  final List<bioway_material.MaterialReciclable> materiales = 
+      bioway_material.MaterialReciclable.materiales;
 
-  final List<TutorialStep> _tutorialSteps = [
-    TutorialStep(
-      title: '¡Excelente trabajo!',
-      description: 'Has separado tus residuos correctamente. Vamos a registrarlos en el sistema.',
-      icon: Icons.check_circle,
-      color: BioWayColors.success,
-    ),
-    TutorialStep(
-      title: 'Coloca tus residuos',
-      description: 'Deposita tus materiales reciclables en el punto de recolección designado o en contenedores apropiados.',
-      icon: Icons.inventory_2,
-      color: BioWayColors.primaryGreen,
-    ),
-    TutorialStep(
-      title: 'Recolección y recompensa',
-      description: 'Un recolector certificado pasará según el horario establecido. Recibirás 20 BioCoins como recompensa.',
-      icon: Icons.local_shipping,
-      color: BioWayColors.info,
-    ),
-  ];
+  late final List<TutorialStep> _tutorialSteps;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    
+    _confettiController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+    
+    _scaleAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.elasticOut,
+    );
+    
+    _rotateAnimation = Tween<double>(
+      begin: 0,
+      end: 2 * 3.14159,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+    
+    _animationController.forward();
+    
+    _tutorialSteps = [
+      TutorialStep(
+        title: 'excellent_work'.tr(),
+        description: 'separated_correctly_message'.tr(),
+        icon: Icons.check_circle,
+        color: BioWayColors.success,
+      ),
+      TutorialStep(
+        title: 'place_your_waste'.tr(),
+        description: 'deposit_materials_message'.tr(),
+        icon: Icons.inventory_2,
+        color: BioWayColors.primaryGreen,
+      ),
+      TutorialStep(
+        title: 'collection_and_reward'.tr(),
+        description: 'collector_will_pass_message'.tr(),
+        icon: Icons.person,
+        color: BioWayColors.info,
+      ),
+    ];
+  }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _animationController.dispose();
+    _confettiController.dispose();
     super.dispose();
   }
 
   void _nextPage() {
+    HapticFeedback.lightImpact();
     if (_currentPage < _tutorialSteps.length - 1) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOutCubic,
       );
     } else {
       _processRegistration();
@@ -58,10 +104,11 @@ class _BrindadorTirarScreenState extends State<BrindadorTirarScreen> {
   }
 
   void _previousPage() {
+    HapticFeedback.lightImpact();
     if (_currentPage > 0) {
       _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOutCubic,
       );
     }
   }
@@ -75,92 +122,214 @@ class _BrindadorTirarScreenState extends State<BrindadorTirarScreen> {
     await Future.delayed(const Duration(seconds: 2));
 
     if (mounted) {
-      // Mostrar diálogo de éxito
-      _showSuccessDialog();
+      _confettiController.forward();
+      _showModernSuccessDialog();
     }
   }
 
-  void _showSuccessDialog() {
+  void _showModernSuccessDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: BioWayColors.success.withValues(alpha:0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.check_circle,
-                  size: 60,
-                  color: BioWayColors.success,
-                ),
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 380),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white,
+                  BioWayColors.success.withValues(alpha: 0.05),
+                ],
               ),
-              const SizedBox(height: 20),
-              const Text(
-                '¡Tarea Completada!',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: BioWayColors.success.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Has ganado 20 BioCoins',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: BioWayColors.primaryGreen,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Tus residuos han sido registrados exitosamente.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                // Volver al dashboard
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [BioWayColors.primaryGreen, BioWayColors.mediumGreen],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Center(
-                  child: Text(
-                    'Continuar',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Success animation
+                Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        BioWayColors.success,
+                        BioWayColors.primaryGreen,
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(28),
+                      topRight: Radius.circular(28),
                     ),
                   ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Animated circles background
+                      ...List.generate(3, (index) {
+                        return TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0, end: 1),
+                          duration: Duration(milliseconds: 800 + (index * 200)),
+                          builder: (context, value, child) {
+                            return Transform.scale(
+                              scale: value,
+                              child: Container(
+                                width: 120 + (index * 40),
+                                height: 120 + (index * 40),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withValues(
+                                    alpha: 0.1 - (index * 0.03),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      }),
+                      // Main icon
+                      ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.celebration,
+                            size: 60,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                
+                // Content
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    children: [
+                      Text(
+                        'task_completed'.tr(),
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Reward card
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              BioWayColors.warning.withValues(alpha: 0.1),
+                              BioWayColors.warning.withValues(alpha: 0.05),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: BioWayColors.warning.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.stars,
+                              color: BioWayColors.warning,
+                              size: 32,
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'you_earned'.tr(),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: BioWayColors.textGrey,
+                                  ),
+                                ),
+                                Text(
+                                  '20 BioCoins',
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: BioWayColors.warning,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      Text(
+                        'waste_registered_successfully'.tr(),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey.shade600,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Action button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            Navigator.of(context).popUntil((route) => route.isFirst);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: BioWayColors.primaryGreen,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.home, color: Colors.white),
+                              const SizedBox(width: 8),
+                              Text(
+                                'back_to_home'.tr(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );
@@ -170,418 +339,676 @@ class _BrindadorTirarScreenState extends State<BrindadorTirarScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: BioWayColors.backgroundGrey,
-      appBar: AppBar(
-        title: const Text('Registro de Residuos'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: BioWayColors.darkGreen,
-      ),
-      body: Column(
-        children: [
-          // Indicador de progreso
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: Row(
-              children: List.generate(
-                _tutorialSteps.length,
-                (index) => Expanded(
-                  child: Container(
-                    margin: EdgeInsets.only(
-                      right: index < _tutorialSteps.length - 1 ? 8 : 0,
-                    ),
-                    height: 4,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Modern Header
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    BioWayColors.primaryGreen,
+                    BioWayColors.navGreen,
+                  ],
+                ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: BioWayColors.primaryGreen.withValues(alpha: 0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'waste_registration'.tr(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(width: 48),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Progress indicator
+                  Container(
+                    height: 6,
                     decoration: BoxDecoration(
-                      color: index <= _currentPage
-                          ? BioWayColors.primaryGreen
-                          : Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
+                      color: Colors.white.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Row(
+                      children: List.generate(
+                        _tutorialSteps.length,
+                        (index) => Expanded(
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            margin: EdgeInsets.only(
+                              right: index < _tutorialSteps.length - 1 ? 4 : 0,
+                            ),
+                            decoration: BoxDecoration(
+                              color: index <= _currentPage
+                                  ? Colors.white
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
+                ],
+              ),
+            ),
+            
+            // Content
+            Expanded(
+              child: PageView.builder(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentPage = index;
+                  });
+                  _animationController.reset();
+                  _animationController.forward();
+                },
+                itemCount: _tutorialSteps.length,
+                itemBuilder: (context, index) {
+                  final step = _tutorialSteps[index];
+                  return _buildModernTutorialPage(step, index);
+                },
+              ),
+            ),
+            
+            // Navigation buttons
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                top: false,
+                child: Row(
+                  children: [
+                    if (_currentPage > 0)
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _previousPage,
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: BorderSide(
+                              color: BioWayColors.primaryGreen,
+                              width: 2,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.arrow_back_ios,
+                                color: BioWayColors.primaryGreen,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'previous'.tr(),
+                                style: TextStyle(
+                                  color: BioWayColors.primaryGreen,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    if (_currentPage > 0) const SizedBox(width: 12),
+                    Expanded(
+                      flex: _currentPage == 0 ? 1 : 2,
+                      child: ElevatedButton(
+                        onPressed: _isProcessing ? null : _nextPage,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: BioWayColors.primaryGreen,
+                          disabledBackgroundColor: Colors.grey.shade400,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: _isProcessing
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    _currentPage < _tutorialSteps.length - 1
+                                        ? 'next'.tr()
+                                        : 'complete'.tr(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    _currentPage < _tutorialSteps.length - 1
+                                        ? Icons.arrow_forward_ios
+                                        : Icons.check_circle,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernTutorialPage(TutorialStep step, int pageIndex) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          const SizedBox(height: 20),
+          // Icon without animation
+          ScaleTransition(
+            scale: _scaleAnimation,
+            child: Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    step.color.withValues(alpha: 0.2),
+                    step.color.withValues(alpha: 0.05),
+                  ],
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: step.color.withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Icon(
+                step.icon,
+                size: 70,
+                color: step.color,
+              ),
+            ),
           ),
+          const SizedBox(height: 32),
           
-          // Contenido del tutorial
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentPage = index;
-                });
-              },
-              itemCount: _tutorialSteps.length,
-              itemBuilder: (context, index) {
-                final step = _tutorialSteps[index];
-                return _buildTutorialPage(step);
-              },
+          // Title with animation
+          FadeTransition(
+            opacity: _scaleAnimation,
+            child: Text(
+              step.title,
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Description
+          FadeTransition(
+            opacity: _scaleAnimation,
+            child: Text(
+              step.description,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
           
-          // Botones de navegación
-          Container(
-            padding: const EdgeInsets.all(20),
-            child: Row(
+          // Page-specific content
+          if (pageIndex == 0) ...[
+            const SizedBox(height: 32),
+            _buildSelectedMaterialsCard(),
+          ],
+          
+          if (pageIndex == 1) ...[
+            const SizedBox(height: 32),
+            _buildInstructionsCard(),
+          ],
+          
+          if (pageIndex == 2) ...[
+            const SizedBox(height: 32),
+            _buildRewardCard(),
+            const SizedBox(height: 16),
+            _buildCollectionInfoCard(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSelectedMaterialsCard() {
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(0, 0.2),
+        end: Offset.zero,
+      ).animate(_scaleAnimation),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                if (_currentPage > 0)
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _previousPage,
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: BorderSide(color: BioWayColors.primaryGreen),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'Anterior',
-                        style: TextStyle(
-                          color: BioWayColors.primaryGreen,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                if (_currentPage > 0) const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _isProcessing ? null : _nextPage,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: BioWayColors.primaryGreen,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: _isProcessing
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(
-                            _currentPage < _tutorialSteps.length - 1
-                                ? 'Siguiente'
-                                : 'Completar',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                  child: Icon(
+                    Icons.recycling,
+                    color: BioWayColors.primaryGreen,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'selected_materials'.tr(),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTutorialPage(TutorialStep step) {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Ícono animado
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(milliseconds: 500),
-            builder: (context, value, child) {
-              return Transform.scale(
-                scale: value,
-                child: Container(
-                  padding: const EdgeInsets.all(40),
-                  decoration: BoxDecoration(
-                    color: step.color.withValues(alpha:0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    step.icon,
-                    size: 80,
-                    color: step.color,
-                  ),
-                ),
+            const SizedBox(height: 16),
+            ...widget.selectedMaterials.entries.map((entry) {
+              final material = materiales.firstWhere(
+                (m) => m.id == entry.key,
+                orElse: () => materiales.first,
               );
-            },
-          ),
-          const SizedBox(height: 40),
-          
-          // Título
-          Text(
-            step.title,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-          
-          // Descripción
-          Text(
-            step.description,
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey.shade600,
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          
-          // Mostrar información adicional según la página
-          if (_currentPage == 0) ...[
-            const SizedBox(height: 40),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha:0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Materiales seleccionados:',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: BioWayColors.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ...widget.selectedMaterials.entries.map((entry) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.check_circle,
-                            color: BioWayColors.success,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '${entry.key}: ${entry.value} kg',
-                              style: const TextStyle(fontSize: 16),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ],
-              ),
-            ),
-          ],
-          
-          // Información adicional para el segundo paso (instrucciones de colocación)
-          if (_currentPage == 1) ...[
-            const SizedBox(height: 30),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha:0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: BioWayColors.primaryGreen,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Instrucciones importantes',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: BioWayColors.textDark,
-                        ),
-                      ),
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      material.color.withValues(alpha: 0.1),
+                      material.color.withValues(alpha: 0.05),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  _buildInstructionItem(
-                    icon: Icons.cleaning_services,
-                    text: 'Asegúrate de que los materiales estén limpios y secos',
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: material.color.withValues(alpha: 0.3),
                   ),
-                  const SizedBox(height: 4),
-                  _buildInstructionItem(
-                    icon: Icons.shopping_bag,
-                    text: 'Usa bolsas transparentes o reutilizables',
-                  ),
-                  const SizedBox(height: 4),
-                  _buildInstructionItem(
-                    icon: Icons.location_on,
-                    text: 'Colócalos en el área designada de tu edificio o calle',
-                  ),
-                  const SizedBox(height: 4),
-                  _buildInstructionItem(
-                    icon: Icons.schedule,
-                    text: 'Respeta los horarios de recolección establecidos',
-                  ),
-                ],
-              ),
-            ),
-          ],
-          
-          // Información adicional para el tercer paso
-          if (_currentPage == 2) ...[
-            const SizedBox(height: 30),
-            // Tarjeta de recompensa
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    BioWayColors.warning.withValues(alpha: 0.1),
-                    BioWayColors.warning.withValues(alpha: 0.05),
-                  ],
                 ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: BioWayColors.warning.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.monetization_on,
-                    color: BioWayColors.warning,
-                    size: 40,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Recompensa',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: BioWayColors.textGrey,
-                          ),
-                        ),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            '20 BioCoins',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: BioWayColors.warning,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Información de recolección
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: BioWayColors.info.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: BioWayColors.info.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.access_time,
-                        color: BioWayColors.info,
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: material.color.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _getIconForMaterial(material.id),
+                        color: material.color,
                         size: 20,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Horario de recolección',
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        '${_getMaterialNameTranslated(material.id)}',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: BioWayColors.info,
+                          color: material.color,
                         ),
                       ),
-                    ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: material.color.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${entry.value} kg',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: material.color,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInstructionsCard() {
+    final instructions = [
+      {
+        'icon': Icons.cleaning_services,
+        'text': 'instruction_clean'.tr(),
+      },
+      {
+        'icon': Icons.shopping_bag,
+        'text': 'instruction_bags'.tr(),
+      },
+      {
+        'icon': Icons.location_on,
+        'text': 'instruction_location'.tr(),
+      },
+      {
+        'icon': Icons.schedule,
+        'text': 'instruction_schedule'.tr(),
+      },
+    ];
+
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(0, 0.2),
+        end: Offset.zero,
+      ).animate(_scaleAnimation),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              BioWayColors.info.withValues(alpha: 0.1),
+              BioWayColors.info.withValues(alpha: 0.05),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: BioWayColors.info.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: BioWayColors.info,
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'important_instructions'.tr(),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: BioWayColors.info,
                   ),
-                  const SizedBox(height: 8),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ...instructions.map((instruction) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        instruction['icon'] as IconData,
+                        color: BioWayColors.primaryGreen,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        instruction['text'] as String,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: BioWayColors.textGrey,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRewardCard() {
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(-0.2, 0),
+        end: Offset.zero,
+      ).animate(_scaleAnimation),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              BioWayColors.warning,
+              BioWayColors.warning.withValues(alpha: 0.8),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: BioWayColors.warning.withValues(alpha: 0.4),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.monetization_on,
+                color: Colors.white,
+                size: 40,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    'Un recolector certificado pasará en el horario establecido para tu zona.',
+                    'your_reward'.tr(),
                     style: TextStyle(
                       fontSize: 14,
-                      color: BioWayColors.textGrey,
-                      height: 1.5,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const Text(
+                    '20 BioCoins',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                 ],
               ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildInstructionItem({required IconData icon, required String text}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            icon,
-            color: BioWayColors.primaryGreen,
-            size: 20,
+  Widget _buildCollectionInfoCard() {
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(0.2, 0),
+        end: Offset.zero,
+      ).animate(_scaleAnimation),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: BioWayColors.info.withValues(alpha: 0.3),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.access_time,
+                  color: BioWayColors.info,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'collection_schedule'.tr(),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: BioWayColors.info,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'certified_collector_message'.tr(),
               style: TextStyle(
                 fontSize: 14,
                 color: BioWayColors.textGrey,
-                height: 1.4,
+                height: 1.5,
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  IconData _getIconForMaterial(String materialId) {
+    switch (materialId) {
+      case 'plastico':
+        return Icons.local_drink;
+      case 'vidrio':
+        return Icons.wine_bar;
+      case 'papel':
+        return Icons.description;
+      case 'metal':
+        return Icons.recycling;
+      case 'organico':
+        return Icons.compost;
+      case 'electronico':
+        return Icons.devices;
+      default:
+        return Icons.recycling;
+    }
+  }
+  
+  String _getMaterialNameTranslated(String materialId) {
+    return 'material_$materialId'.tr();
   }
 }
 

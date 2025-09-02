@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'firebase_options.dart';
 import 'screens/splash/splash_screen.dart';
 import 'l10n/app_localizations.dart';
@@ -11,9 +12,22 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
   
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Disable Easy Localization debug logs
+  EasyLocalization.logger.enableBuildModes = [];
+  EasyLocalization.logger.enableLevels = [];
+  
+  // Solo inicializar Firebase si no es web
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } catch (e) {
+      print('Error inicializando Firebase: $e');
+    }
+  } else {
+    print('Ejecutando en web - Firebase no configurado para esta plataforma');
+  }
   
   runApp(
     EasyLocalization(
@@ -23,6 +37,9 @@ void main() async {
       ],
       path: 'assets/translations',
       fallbackLocale: const Locale('es', 'MX'),
+      useOnlyLangCode: false,
+      useFallbackTranslations: true,
+      saveLocale: true,
       child: ChangeNotifierProvider(
         create: (context) => LanguageProvider(),
         child: const BioWayApp(),

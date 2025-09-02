@@ -5,7 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../models/detected_material.dart';
-import '../../services/waste_detection_service.dart';
+import '../../services/waste_detection_service_v2.dart';
 import '../../utils/colors.dart';
 
 class WasteScannerScreen extends StatefulWidget {
@@ -18,7 +18,7 @@ class WasteScannerScreen extends StatefulWidget {
 class _WasteScannerScreenState extends State<WasteScannerScreen> 
     with TickerProviderStateMixin {
   CameraController? _cameraController;
-  final WasteDetectionService _detectionService = WasteDetectionService();
+  final WasteDetectionServiceV2 _detectionService = WasteDetectionServiceV2();
   final ImagePicker _imagePicker = ImagePicker();
   
   bool _isProcessing = false;

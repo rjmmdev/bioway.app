@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../utils/colors.dart';
 import '../language/language_selection_screen.dart';
+import '../auth/bioway_login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -121,13 +123,19 @@ class _SplashScreenState extends State<SplashScreen>
     // Tiempo mínimo de splash para que se vean las animaciones
     await Future.delayed(const Duration(milliseconds: 600));
 
-    // Navegar al login con transición rápida
+    // Check if language has been selected
+    final prefs = await SharedPreferences.getInstance();
+    final languageSelected = prefs.getBool('language_selected') ?? false;
+
+    // Navegar según si el idioma ha sido seleccionado
     if (mounted) {
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) =>
-          const LanguageSelectionScreen(),
+              languageSelected 
+                  ? const BioWayLoginScreen() 
+                  : const LanguageSelectionScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             // Transición simple de fade para continuidad visual
             return FadeTransition(

@@ -1,90 +1,80 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../utils/colors.dart';
 import '../auth/bioway_login_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LanguageSelectionScreen extends StatefulWidget {
-  const LanguageSelectionScreen({Key? key}) : super(key: key);
+  const LanguageSelectionScreen({super.key});
 
   @override
   State<LanguageSelectionScreen> createState() => _LanguageSelectionScreenState();
 }
 
-class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
+class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> 
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
+  late Animation<Offset> _slideAnimation;
   
-  String _selectedLanguage = 'es'; // Default to Spanish
-  
+  String _selectedLanguage = 'es';
+
   @override
   void initState() {
     super.initState();
-    _setupAnimations();
-    _loadSavedLanguage();
-  }
-  
-  void _setupAnimations() {
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
     
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
+    _fadeAnimation = CurvedAnimation(
       parent: _animationController,
-      curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
-    ));
+      curve: Curves.easeIn,
+    );
     
-    _scaleAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.0,
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: const Interval(0.3, 1.0, curve: Curves.elasticOut),
+      curve: Curves.easeOutCubic,
     ));
     
     _animationController.forward();
   }
   
-  Future<void> _loadSavedLanguage() async {
-    setState(() {
-      _selectedLanguage = context.locale.languageCode;
-    });
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Get current locale after context is available
+    _selectedLanguage = context.locale.languageCode;
   }
-  
+
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
   }
-  
-  void _selectLanguage(String languageCode) {
+
+  Future<void> _selectLanguage(String langCode) async {
     setState(() {
-      _selectedLanguage = languageCode;
+      _selectedLanguage = langCode;
     });
     
-    // Vibración táctil
-    HapticFeedback.lightImpact();
-  }
-  
-  void _continueToLogin() async {
-    // Cambiar el idioma usando easy_localization
-    if (_selectedLanguage == 'en') {
+    // Save language preference
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('language_selected', true);
+    
+    // Change app language
+    if (langCode == 'en') {
       await context.setLocale(const Locale('en', 'US'));
     } else {
       await context.setLocale(const Locale('es', 'MX'));
     }
     
-    // Navegar al login
     if (mounted) {
-      Navigator.pushReplacement(
-        context,
+      // Navigate to login screen
+      Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) => 
               const BioWayLoginScreen(),
@@ -99,209 +89,207 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
       );
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-      ),
-    );
-    
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: BioWayColors.backgroundGradient,
+            colors: [
+              BioWayColors.primaryGreen,
+              BioWayColors.navGreen,
+            ],
           ),
         ),
         child: SafeArea(
-          child: AnimatedBuilder(
-            animation: _animationController,
-            builder: (context, child) {
-              return FadeTransition(
-                opacity: _fadeAnimation,
-                child: Transform.scale(
-                  scale: _scaleAnimation.value,
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Logo
-                        SvgPicture.asset(
-                          'assets/logos/bioway_logo.svg',
-                          width: 120,
-                          height: 120,
-                        ),
-                        
-                        const SizedBox(height: 48),
-                        
-                        // Título
-                        Text(
-                          'select_language'.tr(),
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: SlideTransition(
+              position: _slideAnimation,
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Logo
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
-                        ),
-                        
-                        const SizedBox(height: 12),
-                        
-                        // Subtítulo
-                        Text(
-                          'can_change_later'.tr(),
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white.withOpacity(0.8),
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        
-                        const SizedBox(height: 48),
-                        
-                        // Opciones de idioma
-                        Column(
-                          children: [
-                            // Español
-                            _buildLanguageOption(
-                              flag: '🇲🇽',
-                              language: 'Español',
-                              subtitle: 'México',
-                              code: 'es',
-                            ),
-                            
-                            const SizedBox(height: 16),
-                            
-                            // English
-                            _buildLanguageOption(
-                              flag: '🇺🇸',
-                              language: 'English',
-                              subtitle: 'United States',
-                              code: 'en',
-                            ),
-                          ],
-                        ),
-                        
-                        const SizedBox(height: 48),
-                        
-                        // Botón de continuar
-                        Container(
-                          width: double.infinity,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                BioWayColors.primaryGreen,
-                                BioWayColors.primaryGreen.withOpacity(0.8),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: BioWayColors.primaryGreen.withOpacity(0.3),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: _continueToLogin,
-                              borderRadius: BorderRadius.circular(16),
-                              child: Center(
-                                child: Text(
-                                  'continue'.tr(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.language,
+                        size: 60,
+                        color: BioWayColors.primaryGreen,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 48),
+                    
+                    // Title
+                    const Text(
+                      'Select your language',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Selecciona tu idioma',
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                    ),
+                    const SizedBox(height: 48),
+                    
+                    // Language Options
+                    _buildLanguageCard(
+                      title: 'Español',
+                      subtitle: 'México',
+                      flag: '🇲🇽',
+                      langCode: 'es',
+                      isSelected: _selectedLanguage == 'es',
+                    ),
+                    const SizedBox(height: 16),
+                    _buildLanguageCard(
+                      title: 'English',
+                      subtitle: 'United States',
+                      flag: '🇺🇸',
+                      langCode: 'en',
+                      isSelected: _selectedLanguage == 'en',
+                    ),
+                    
+                    const SizedBox(height: 48),
+                    
+                    // Continue button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => _selectLanguage(_selectedLanguage),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: BioWayColors.primaryGreen,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 8,
+                        ),
+                        child: Text(
+                          _selectedLanguage == 'es' ? 'Continuar' : 'Continue',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    Text(
+                      _selectedLanguage == 'es' 
+                          ? 'Puedes cambiarlo más tarde en configuración'
+                          : 'You can change it later in settings',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withValues(alpha: 0.8),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-              );
-            },
+              ),
+            ),
           ),
         ),
       ),
     );
   }
   
-  Widget _buildLanguageOption({
-    required String flag,
-    required String language,
+  Widget _buildLanguageCard({
+    required String title,
     required String subtitle,
-    required String code,
+    required String flag,
+    required String langCode,
+    required bool isSelected,
   }) {
-    final isSelected = _selectedLanguage == code;
-    
     return GestureDetector(
-      onTap: () => _selectLanguage(code),
+      onTap: () {
+        setState(() {
+          _selectedLanguage = langCode;
+        });
+      },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: isSelected 
-              ? BioWayColors.primaryGreen.withOpacity(0.2)
-              : Colors.white.withOpacity(0.1),
+              ? Colors.white 
+              : Colors.white.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected 
-                ? BioWayColors.primaryGreen
-                : Colors.white.withOpacity(0.3),
-            width: isSelected ? 2 : 1,
+                ? Colors.white 
+                : Colors.white.withValues(alpha: 0.3),
+            width: 2,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ]
+              : [],
         ),
         child: Row(
           children: [
-            // Bandera
             Text(
               flag,
-              style: const TextStyle(fontSize: 32),
+              style: const TextStyle(fontSize: 40),
             ),
-            
             const SizedBox(width: 16),
-            
-            // Textos
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    language,
+                    title,
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : Colors.white.withOpacity(0.9),
+                      color: isSelected 
+                          ? BioWayColors.primaryGreen 
+                          : Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 4),
                   Text(
                     subtitle,
                     style: TextStyle(
                       fontSize: 14,
                       color: isSelected 
-                          ? Colors.white.withOpacity(0.8)
-                          : Colors.white.withOpacity(0.6),
+                          ? BioWayColors.textGrey 
+                          : Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
                 ],
               ),
             ),
-            
-            // Check icon
             if (isSelected)
               Icon(
                 Icons.check_circle,
