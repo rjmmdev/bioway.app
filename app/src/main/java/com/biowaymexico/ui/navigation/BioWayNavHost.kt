@@ -89,7 +89,7 @@ fun BioWayNavHost(
         }
 
         composable(BioWayDestinations.BrindadorClasificador.route) {
-            com.biowaymexico.ui.screens.brindador.ClasificadorScreen(
+            com.biowaymexico.ui.screens.brindador.ClasificadorScreenYOLO(
                 onNavigateBack = {
                     navController.popBackStack()
                 }

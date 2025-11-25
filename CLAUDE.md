@@ -19,9 +19,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # Build debug APK
 ./gradlew assembleDebug
+# Output: app/build/outputs/apk/debug/app-debug.apk
 
 # Build release APK
 ./gradlew assembleRelease
+# Output: app/build/outputs/apk/release/app-release-unsigned.apk
 
 # Install on connected device/emulator
 ./gradlew installDebug
@@ -31,6 +33,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # Rebuild entire project
 ./gradlew clean build
+
+# Check for dependency updates
+./gradlew dependencyUpdates
+
+# Gradle sync (when build.gradle changes)
+./gradlew --refresh-dependencies
 ```
 
 ### Testing
@@ -44,6 +52,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # Run specific test class
 ./gradlew test --tests com.biowaymexico.ExampleUnitTest
+
+# Generate test coverage report
+./gradlew createDebugCoverageReport
 ```
 
 ### Android Studio
@@ -73,7 +84,7 @@ com.biowaymexico/
 │   │   └── BioWayNavHost.kt     # NavHost implementation
 │   ├── theme/                   # Design system
 │   │   ├── Color.kt             # BioWayColors object (40+ colors)
-│   │   ├── Gradients.kt         # BioWayGradients object
+│   │   ├── Gradients.kt         # BioWayGradients object (6+ gradients)
 │   │   ├── Theme.kt             # BioWayTheme composable
 │   │   └── Type.kt              # Typography
 │   ├── components/              # Reusable UI components
@@ -84,10 +95,13 @@ com.biowaymexico/
 │   └── screens/                 # Feature screens by module
 │       ├── splash/
 │       ├── auth/                # Login, Register, PlatformSelector
-│       ├── brindador/           # Citizen module (4 screens)
+│       ├── brindador/           # Citizen module (6 screens including ML)
 │       ├── recolector/          # Collector module (4 screens)
 │       ├── centro_acopio/       # Collection center (1 screen)
 │       └── maestro/             # Admin module (1 screen)
+└── utils/
+    ├── ClasificadorResiduos.kt  # Legacy waste classifier
+    └── WasteClassifierYOLO.kt   # YOLOv8 ML classifier
 ```
 
 ### State Management
@@ -130,17 +144,20 @@ Navigation flow: **Splash → PlatformSelector → Login → User-specific modul
 
 Each user type has its own module with a main screen container:
 
-1. **Brindador (Citizen):** Uses `HorizontalPager` for 4 tabs
-   - Dashboard, Comercio Local, Competencias, Perfil
+1. **Brindador (Citizen):** Uses `HorizontalPager` for 3 tabs
+   - Dashboard (BioCoins, schedules, tips, QR scanner)
+   - Comercio Local (marketplace, product listings)
+   - Perfil/Competencias (profile, rankings, achievements)
 
-2. **Recolector (Collector):** Uses `HorizontalPager` for 3 tabs
-   - Mapa (Leaflet WebView), Historial, Perfil
+2. **Recolector (Collector):** Uses `HorizontalPager` for 2 tabs
+   - Mapa (OSMDroid OpenStreetMap with collection points)
+   - Perfil (statistics, environmental impact metrics)
 
 3. **Centro de Acopio:** Single dashboard with modules
-   - Recepción, Inventario, Prepago, Reportes
+   - Recepción, Inventario, Prepago, Reportes (structure ready, not fully implemented)
 
 4. **Maestro (Admin):** Single dashboard with admin modules
-   - Empresas, Usuarios, Materiales, Horarios, Zonas, Configuración
+   - Empresas, Usuarios, Materiales, Horarios, Zonas, Configuración (structure ready)
 
 ## Design System
 
@@ -183,12 +200,22 @@ BioWayGradientCard(gradient = BioWayGradients.AquaGradient) { }
 
 ## Key Implementation Details
 
+### Machine Learning Integration (YOLOv8)
+
+The app includes real-time waste classification using YOLOv8:
+- **Model:** `best.tflite` (3MB, 12 waste categories, 86% accuracy)
+- **Implementation:** `WasteClassifierYOLO.kt` and `ClasificadorScreenYOLO.kt`
+- **Performance:** 40-72ms CPU inference, 20-40ms GPU (when available)
+- **Features:** Live camera feed, bounding boxes, confidence scores
+- **Categories:** Plástico, Cartón, Papel, Vidrio, Metal, Orgánico, Basura
+
 ### Map Integration
 
-The map functionality uses **Leaflet via WebView** (no external dependencies):
-- Main: `RecolectorMapaScreenLeaflet.kt` (WebView + Leaflet.js)
-- Alternative: `RecolectorMapaScreenSimple.kt` (placeholder)
-- OSMDroid was removed to avoid dependency issues
+The app uses **OSMDroid** (OpenStreetMap) for maps:
+- **Implementation:** `RecolectorMapaScreenSimple.kt`
+- **Dependencies:** `org.osmdroid:osmdroid-android:6.1.18`
+- **No API keys required** (uses OpenStreetMap tiles)
+- Displays collection points in Mexico City area
 
 ### Platform Selector
 
@@ -270,6 +297,28 @@ implementation("androidx.navigation:navigation-compose:2.7.7")
 // Lifecycle
 implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
 implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
+
+// Machine Learning (YOLOv8)
+implementation("org.tensorflow:tensorflow-lite:2.14.0")
+implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
+implementation("org.tensorflow:tensorflow-lite-gpu:2.14.0")
+
+// Camera (for ML classifier)
+implementation("androidx.camera:camera-core:1.3.1")
+implementation("androidx.camera:camera-camera2:1.3.1")
+implementation("androidx.camera:camera-lifecycle:1.3.1")
+implementation("androidx.camera:camera-view:1.3.1")
+
+// Maps
+implementation("org.osmdroid:osmdroid-android:6.1.18")
+implementation("tech.utsmankece:osm-androd-compose:0.0.3")
+
+// Accompanist
+implementation("com.google.accompanist:accompanist-permissions:0.32.0")
+implementation("com.google.accompanist:accompanist-pager:0.34.0")
+
+// Coroutines
+implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 ```
 
 ### Not Yet Implemented
@@ -369,6 +418,9 @@ fun myTest() {
 # Or clean from terminal
 ./gradlew clean
 rm -rf .gradle
+
+# Force dependency refresh
+./gradlew build --refresh-dependencies
 ```
 
 ### Compose Preview Issues
@@ -382,6 +434,25 @@ rm -rf .gradle
 - Always use route constants from `BioWayDestinations`
 - Ensure NavHost includes all routes
 - Check for route typos (compile-time safety with sealed classes)
+
+### Build Failures
+
+```bash
+# Common fixes for build issues
+./gradlew clean
+./gradlew --stop  # Stop Gradle daemon
+./gradlew assembleDebug --stacktrace  # Debug with stack trace
+
+# JDK version issues (requires JDK 11)
+java -version  # Should show version 11
+```
+
+### ML Model Loading Issues
+
+- Ensure `best.tflite` exists in `app/src/main/assets/models/`
+- Check camera permissions are granted
+- Verify TensorFlow Lite dependencies are included
+- Model requires minimum 150MB free memory
 
 ## Future Architecture Plans
 
@@ -414,11 +485,14 @@ com.biowaymexico/
 ## Important Notes
 
 - **No backend yet:** All data is mock/placeholder
-- **WebView maps:** Leaflet via WebView, not Google Maps (to avoid API keys during development)
+- **Maps:** OSMDroid with OpenStreetMap tiles (no API keys required)
+- **ML Classification:** YOLOv8 model for waste classification (3MB, 12 categories)
 - **Design mode:** Quick access buttons bypass authentication for UI development
 - **Material3:** Use Material3 components, not Material2
 - **Edge-to-edge:** UI uses edge-to-edge display (adjust for system bars)
 - **Spanish language:** UI text is in Spanish (target audience: Mexico)
+- **Gradle Configuration:** JDK 11 required, min SDK 33 (Android 13)
+- **Platform Selector:** Currently disabled in navigation (line commented out)
 
 ## Resources
 

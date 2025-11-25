@@ -597,7 +597,7 @@ fun ResidueInfo(categoria: String) {
 }
 
 @Composable
-fun PermissionRequiredScreen(
+private fun PermissionRequiredScreen(
     onRequestPermission: () -> Unit
 ) {
     Column(

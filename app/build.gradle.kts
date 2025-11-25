@@ -16,6 +16,11 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // NDK para TensorFlow Lite
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+        }
     }
 
     buildTypes {
@@ -36,11 +41,12 @@ android {
     }
     buildFeatures {
         compose = true
+        mlModelBinding = true
     }
 
     // No comprimir archivos TFLite
     aaptOptions {
-        noCompress("tflite")
+        noCompress("tflite", "lite")
     }
 }
 
@@ -65,14 +71,23 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
 
-    // TensorFlow Lite - Clasificación de residuos
+    // TensorFlow Lite - Clasificación de residuos (YOLOv8)
     implementation("org.tensorflow:tensorflow-lite:2.14.0")
     implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
+    implementation("org.tensorflow:tensorflow-lite-gpu:2.14.0")
+    implementation("org.tensorflow:tensorflow-lite-gpu-api:2.14.0")
 
-    // CameraX para captura de imágenes
+    // CameraX para captura de imágenes y análisis en tiempo real
+    implementation("androidx.camera:camera-core:1.3.1")
     implementation("androidx.camera:camera-camera2:1.3.1")
     implementation("androidx.camera:camera-lifecycle:1.3.1")
     implementation("androidx.camera:camera-view:1.3.1")
+
+    // Coroutines para operaciones asíncronas
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
+    // Permisos con Accompanist
+    implementation("com.google.accompanist:accompanist-permissions:0.32.0")
 
     // Accompanist Pager - Para HorizontalPager en registro multi-paso
     implementation("com.google.accompanist:accompanist-pager:0.34.0")
