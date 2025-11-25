@@ -29,7 +29,9 @@ import kotlinx.coroutines.launch
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun BrindadorMainScreen(
-    onNavigateToClasificador: () -> Unit = {}
+    onNavigateToClasificador: () -> Unit = {},
+    onNavigateToUsuarioNormalNFC: () -> Unit = {},
+    onNavigateToCelularEnBoteNFC: () -> Unit = {}
 ) {
     val pagerState = rememberPagerState(pageCount = { 3 })
     val scope = rememberCoroutineScope()
@@ -54,7 +56,9 @@ fun BrindadorMainScreen(
         ) { page ->
             when (page) {
                 0 -> BrindadorDashboardScreen(
-                    onNavigateToClasificador = onNavigateToClasificador
+                    onNavigateToClasificador = onNavigateToClasificador,
+                    onNavigateToUsuarioNormalNFC = onNavigateToUsuarioNormalNFC,
+                    onNavigateToCelularEnBoteNFC = onNavigateToCelularEnBoteNFC
                 )
                 1 -> BrindadorComercioLocalScreen()
                 2 -> BrindadorPerfilCompetenciasScreen()

@@ -84,12 +84,34 @@ fun BioWayNavHost(
             com.biowaymexico.ui.screens.brindador.BrindadorMainScreen(
                 onNavigateToClasificador = {
                     navController.navigate(BioWayDestinations.BrindadorClasificador.route)
+                },
+                onNavigateToUsuarioNormalNFC = {
+                    navController.navigate(BioWayDestinations.BrindadorUsuarioNormalNFC.route)
+                },
+                onNavigateToCelularEnBoteNFC = {
+                    navController.navigate(BioWayDestinations.BrindadorCelularEnBoteNFC.route)
                 }
             )
         }
 
         composable(BioWayDestinations.BrindadorClasificador.route) {
             com.biowaymexico.ui.screens.brindador.ClasificadorScreenYOLO(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(BioWayDestinations.BrindadorUsuarioNormalNFC.route) {
+            com.biowaymexico.ui.screens.brindador.UsuarioNormalNFCScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(BioWayDestinations.BrindadorCelularEnBoteNFC.route) {
+            com.biowaymexico.ui.screens.brindador.CelularEnBoteNFCScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }

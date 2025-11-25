@@ -32,7 +32,9 @@ import java.time.LocalDate
 fun BrindadorDashboardScreen(
     onNavigateToScanner: () -> Unit = {},
     onNavigateToResiduos: () -> Unit = {},
-    onNavigateToClasificador: () -> Unit = {}
+    onNavigateToClasificador: () -> Unit = {},
+    onNavigateToUsuarioNormalNFC: () -> Unit = {},
+    onNavigateToCelularEnBoteNFC: () -> Unit = {}
 ) {
     var selectedIndex by remember { mutableStateOf(1) } // HOY por defecto
 
@@ -99,9 +101,11 @@ fun BrindadorDashboardScreen(
             }
 
             item {
-                // Sección de Herramientas IA
+                // Sección de Herramientas IA y NFC
                 BuildAIToolsSection(
-                    onNavigateToClasificador = onNavigateToClasificador
+                    onNavigateToClasificador = onNavigateToClasificador,
+                    onNavigateToUsuarioNormalNFC = onNavigateToUsuarioNormalNFC,
+                    onNavigateToCelularEnBoteNFC = onNavigateToCelularEnBoteNFC
                 )
                 Spacer(modifier = Modifier.height(20.dp))
             }
@@ -569,134 +573,189 @@ private fun DetailRow(icon: ImageVector, label: String, value: String) {
 
 @Composable
 private fun BuildAIToolsSection(
-    onNavigateToClasificador: () -> Unit
+    onNavigateToClasificador: () -> Unit,
+    onNavigateToUsuarioNormalNFC: () -> Unit,
+    onNavigateToCelularEnBoteNFC: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onNavigateToClasificador() },
-            shape = RoundedCornerShape(20.dp),
-            color = Color.White,
-            shadowElevation = 6.dp
-        ) {
-            Box {
-                // Fondo con gradiente
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(
-                                    BioWayColors.PrimaryGreen.copy(alpha = 0.1f),
-                                    BioWayColors.Turquoise.copy(alpha = 0.1f)
-                                )
-                            )
-                        )
-                )
+        // Clasificador IA
+        ToolCard(
+            icon = Icons.Default.PhotoCamera,
+            title = "Clasificador IA",
+            description = "Identifica residuos con tu cámara usando Inteligencia Artificial",
+            badge = "NUEVO",
+            detail = "86% de precisión",
+            detailIcon = Icons.Default.AutoAwesome,
+            gradientColors = listOf(
+                BioWayColors.PrimaryGreen.copy(alpha = 0.1f),
+                BioWayColors.Turquoise.copy(alpha = 0.1f)
+            ),
+            onClick = onNavigateToClasificador
+        )
 
-                // Contenido
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    verticalAlignment = Alignment.CenterVertically
+        // Usuario Normal NFC
+        ToolCard(
+            icon = Icons.Default.Nfc,
+            title = "Usuario Normal",
+            description = "Genera un ID único para compartir mediante NFC",
+            badge = "NFC",
+            detail = "Modo emisor",
+            detailIcon = Icons.Default.Send,
+            gradientColors = listOf(
+                Color(0xFF4A90E2).copy(alpha = 0.1f),
+                Color(0xFF5AB9EA).copy(alpha = 0.1f)
+            ),
+            onClick = onNavigateToUsuarioNormalNFC
+        )
+
+        // Celular en Bote NFC
+        ToolCard(
+            icon = Icons.Default.PhoneAndroid,
+            title = "Celular en Bote",
+            description = "Detecta y reconoce dispositivos cercanos mediante NFC",
+            badge = "NFC",
+            detail = "Modo receptor",
+            detailIcon = Icons.Default.Sensors,
+            gradientColors = listOf(
+                Color(0xFF9B59B6).copy(alpha = 0.1f),
+                Color(0xFFAB47BC).copy(alpha = 0.1f)
+            ),
+            onClick = onNavigateToCelularEnBoteNFC
+        )
+    }
+}
+
+@Composable
+private fun ToolCard(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    badge: String,
+    detail: String,
+    detailIcon: ImageVector,
+    gradientColors: List<Color>,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(20.dp),
+        color = Color.White,
+        shadowElevation = 6.dp
+    ) {
+        Box {
+            // Fondo con gradiente
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        brush = Brush.horizontalGradient(colors = gradientColors)
+                    )
+            )
+
+            // Contenido
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Icono con fondo
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = gradientColors[0].copy(alpha = 0.3f)
                 ) {
-                    // Icono con fondo
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = BioWayColors.PrimaryGreen.copy(alpha = 0.2f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(64.dp)
-                                .background(
-                                    brush = Brush.radialGradient(
-                                        colors = listOf(
-                                            BioWayColors.PrimaryGreen.copy(alpha = 0.3f),
-                                            BioWayColors.Turquoise.copy(alpha = 0.2f)
-                                        )
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(
+                                        gradientColors[0].copy(alpha = 0.5f),
+                                        gradientColors[1].copy(alpha = 0.3f)
                                     )
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PhotoCamera,
-                                contentDescription = null,
-                                tint = BioWayColors.DarkGreen,
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    // Texto
-                    Column(
-                        modifier = Modifier.weight(1f)
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = BioWayColors.DarkGreen,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Texto
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = title,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = BioWayColors.DarkGreen
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = gradientColors[1].copy(alpha = 0.3f)
                         ) {
                             Text(
-                                text = "Clasificador IA",
-                                fontSize = 18.sp,
+                                text = badge,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = BioWayColors.DarkGreen
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = BioWayColors.Turquoise.copy(alpha = 0.2f)
-                            ) {
-                                Text(
-                                    text = "NUEVO",
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = BioWayColors.DarkGreen
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "Identifica residuos con tu cámara usando Inteligencia Artificial",
-                            fontSize = 13.sp,
-                            color = Color(0xFF666666),
-                            lineHeight = 18.sp
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                tint = BioWayColors.Turquoise,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "86% de precisión",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = BioWayColors.DarkGreen
-                            )
                         }
                     }
-
-                    // Flecha
-                    Icon(
-                        imageVector = Icons.Default.ChevronRight,
-                        contentDescription = "Ir",
-                        tint = BioWayColors.DarkGreen,
-                        modifier = Modifier.size(28.dp)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = description,
+                        fontSize = 13.sp,
+                        color = Color(0xFF666666),
+                        lineHeight = 18.sp
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = detailIcon,
+                            contentDescription = null,
+                            tint = Color(0xFF4A90E2),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = detail,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = BioWayColors.DarkGreen
+                        )
+                    }
                 }
+
+                // Flecha
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = "Ir",
+                    tint = BioWayColors.DarkGreen,
+                    modifier = Modifier.size(28.dp)
+                )
             }
         }
     }

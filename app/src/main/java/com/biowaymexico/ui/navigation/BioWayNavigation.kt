@@ -22,6 +22,8 @@ sealed class BioWayDestinations(val route: String) {
     data object BrindadorPerfil : BioWayDestinations("brindador_perfil")
     data object BrindadorCompetencias : BioWayDestinations("brindador_competencias")
     data object BrindadorClasificador : BioWayDestinations("brindador_clasificador")
+    data object BrindadorUsuarioNormalNFC : BioWayDestinations("brindador_usuario_normal_nfc")
+    data object BrindadorCelularEnBoteNFC : BioWayDestinations("brindador_celular_en_bote_nfc")
 
     // === RECOLECTOR ===
     data object RecolectorMain : BioWayDestinations("recolector_main")
