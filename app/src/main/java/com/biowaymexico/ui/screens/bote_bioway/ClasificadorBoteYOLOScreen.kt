@@ -1073,7 +1073,10 @@ private fun DetectionScreen(
     // Actualizar tracker de estabilidad con cada resultado
     LaunchedEffect(currentResult) {
         // Solo procesar si no estamos depositando
-        if (isDepositing) return@LaunchedEffect
+        if (isDepositing) {
+            Log.d(TAG, "⏸️ Detección pausada - depósito en progreso")
+            return@LaunchedEffect
+        }
 
         val detections = currentResult?.boxes ?: emptyList()
         val primaryDetection = detections.maxByOrNull { it.confidence }
@@ -1087,44 +1090,56 @@ private fun DetectionScreen(
 
         // Si alcanzamos estabilidad y estamos conectados al ESP32, marcar para depositar
         if (stableCategory != null && bluetoothConectado && !isDepositing) {
+            Log.d(TAG, "🎯 Disparando depósito para: ${stableCategory.displayName}")
             stableCategoryToDeposit = stableCategory
         }
     }
 
     // Ejecutar deposito cuando se detecta material estable
+    // PROTOCOLO v2: Envía DEPOSITAR:CATEGORIA y espera señal LISTO del ESP32
     LaunchedEffect(stableCategoryToDeposit) {
         val categoryToDeposit = stableCategoryToDeposit ?: return@LaunchedEffect
         if (isDepositing) return@LaunchedEffect
 
         Log.d(TAG, "═══════════════════════════════════════")
         Log.d(TAG, "🎯 MATERIAL ESTABLE: ${categoryToDeposit.displayName}")
-        Log.d(TAG, "   Iniciando depósito automático...")
+        Log.d(TAG, "   Iniciando depósito con protocolo v2...")
         Log.d(TAG, "═══════════════════════════════════════")
 
         isDepositing = true
         depositStatus = "Depositando ${categoryToDeposit.displayName}..."
         stableCategoryToDeposit = null  // Resetear trigger
 
-        val result = bluetoothManager.enviarMaterial(categoryToDeposit.displayName)
+        // PROTOCOLO v2: Enviar DEPOSITAR y esperar LISTO
+        val result = bluetoothManager.depositarYEsperarListo(categoryToDeposit.displayName)
         result.fold(
             onSuccess = {
+                // ESP32 confirmó LISTO - depósito exitoso
                 depositStatus = "✓ ${categoryToDeposit.displayName} depositado"
                 lastDepositCategory = categoryToDeposit
-                Log.d(TAG, "✅ Depósito completado: ${categoryToDeposit.displayName}")
+                Log.d(TAG, "✅ ESP32 confirmó LISTO - Depósito completado: ${categoryToDeposit.displayName}")
+
+                // Mostrar confirmación brevemente
+                kotlinx.coroutines.delay(800)
             },
             onFailure = { error ->
                 depositStatus = "Error: ${error.message}"
                 Log.e(TAG, "❌ Error en depósito: ${error.message}")
+
+                // En caso de error, esperar un poco más para mostrar el mensaje
+                kotlinx.coroutines.delay(2000)
             }
         )
 
-        // Esperar un momento para mostrar el resultado
-        kotlinx.coroutines.delay(2000)
-
-        // Resetear para nueva detección
+        // Resetear TODO para nueva detección
+        Log.d(TAG, "🔄 Reseteando estado para nueva detección...")
         isDepositing = false
         depositStatus = ""
+        currentCategory = null      // Resetear UI
+        stabilityProgress = 0f      // Resetear progreso
         DetectionStabilityTracker.reset()
+        Log.d(TAG, "✅ Estado reseteado - Listo para nueva detección")
+        Log.d(TAG, "═══════════════════════════════════════")
     }
 
     // Limpiar al salir
@@ -1275,21 +1290,31 @@ private fun DetectionScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 if (isDepositing) {
-                                    // Estado: Depositando
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    // Estado: Depositando (esperando LISTO del ESP32)
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(24.dp),
-                                            color = BioWayColors.BrandGreen,
-                                            strokeWidth = 3.dp
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(24.dp),
+                                                color = BioWayColors.BrandGreen,
+                                                strokeWidth = 3.dp
+                                            )
+                                            Text(
+                                                text = depositStatus,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = BioWayColors.BrandGreen,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = depositStatus,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = BioWayColors.BrandGreen,
-                                            fontWeight = FontWeight.Bold
+                                            text = "Esperando confirmación del ESP32...",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.White.copy(alpha = 0.6f)
                                         )
                                     }
                                 } else if (depositStatus.startsWith("✓")) {

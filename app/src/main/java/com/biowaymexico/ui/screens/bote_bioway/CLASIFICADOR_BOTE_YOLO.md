@@ -186,6 +186,28 @@ adb logcat | grep PlateFilter
 
 # Solo clasificador principal
 adb logcat | grep ClasificadorBoteYOLO
+
+# Comunicacion Bluetooth/ESP32 (Protocolo v2)
+adb logcat | grep BluetoothManager
+
+# Ver todo el flujo de deposito
+adb logcat | grep -E "(ClasificadorBoteYOLO|BluetoothManager)"
+```
+
+### Formato de Logs del Protocolo v2
+
+```
+═══════════════════════════════════════
+🎯 PROTOCOLO v2: DEPOSITAR Y ESPERAR LISTO
+   Categoría: Plástico
+═══════════════════════════════════════
+📤 Enviando: DEPOSITAR:Plástico
+⏳ Esperando señal LISTO del ESP32...
+📥 Respuesta: LISTO
+═══════════════════════════════════════
+✅ SEÑAL LISTO RECIBIDA
+   Tiempo total: 4523ms
+═══════════════════════════════════════
 ```
 
 ### Formato de Logs del Filtro
@@ -245,19 +267,55 @@ Deteccion → Clasificar categoria → Mismo material 2s? → Deposito automatic
      └────────────────────────────────────┘
 ```
 
-### Integracion con ESP32 (Bluetooth)
+### Integracion con ESP32 (Bluetooth) - Protocolo v2
 
 La pantalla incluye un boton de conexion minimalista en la esquina superior derecha:
 
 - **OFF (Rojo)**: ESP32 desconectado - click para conectar
 - **ON (Verde)**: ESP32 conectado - click para desconectar
 
+#### Protocolo de Comunicacion Bidireccional
+
+El sistema usa comunicacion **bidireccional precisa** sin timers:
+
+```
+┌─────────────────────┐                    ┌─────────────────────┐
+│      Android        │                    │       ESP32         │
+│   (Clasificador)    │                    │   (Bote BioWay)     │
+└─────────────────────┘                    └─────────────────────┘
+         │                                          │
+         │  1. DEPOSITAR:Plástico                   │
+         │─────────────────────────────────────────>│
+         │                                          │ (ejecuta secuencia)
+         │                                          │ - GIRO a posicion
+         │                                          │ - INCL a posicion
+         │                                          │ - Depositar
+         │                                          │ - RESET a home
+         │  2. LISTO                                │
+         │<─────────────────────────────────────────│
+         │                                          │
+         │  (Android resume deteccion)              │
+```
+
+**Comandos ESP32:**
+- `DEPOSITAR:PLASTICO` - Depositar en compartimento plastico
+- `DEPOSITAR:PAPEL` - Depositar en compartimento papel/carton
+- `DEPOSITAR:ALUMINIO` - Depositar en compartimento metal
+- `DEPOSITAR:GENERAL` - Depositar en compartimento general
+
+**Respuesta ESP32:**
+- `LISTO` - Secuencia completada, Android puede continuar
+
+#### Flujo de Deposito
+
 Cuando hay conexion activa y se detecta material estable por 2s:
 1. Se muestra barra de progreso llenandose
-2. Al completar, se ejecuta `BluetoothManager.enviarMaterial(categoria)`
-3. El bote gira e inclina automaticamente
-4. Se muestra confirmacion "✓ [Material] depositado"
-5. Se resetea para nueva deteccion
+2. Al completar, se ejecuta `BluetoothManager.depositarYEsperarListo(categoria)`
+3. Android muestra "Esperando confirmacion del ESP32..."
+4. El bote gira e inclina automaticamente (secuencia completa)
+5. ESP32 envia "LISTO" cuando termina
+6. Se muestra confirmacion "✓ [Material] depositado"
+7. Se resetea para nueva deteccion
 
 ---
 
@@ -312,10 +370,12 @@ implementation("com.google.accompanist:accompanist-permissions:0.32.0")
 |---------|-------------|
 | `ClasificadorBoteYOLOScreen.kt` | Pantalla principal (este archivo) |
 | `WasteDetector.kt` | Wrapper TFLite para YOLO (`com.ultralytics.yolo`) |
+| `BluetoothManager.kt` | Comunicacion Bluetooth con ESP32 (Protocolo v2) |
 | `BoteBioWayMainScreen.kt` | Menu principal del Bote BioWay |
 | `BioWayNavHost.kt` | Navegacion (ruta: `BoteBioWayClasificadorYOLO`) |
 | `waste_detector_v2.tflite` | Modelo YOLO (assets/models/) |
 | `waste_detector_labels.txt` | Etiquetas del modelo (assets/labels/) |
+| `ESP32_BoteBioWay.txt` | Codigo Arduino del ESP32 (soporte DEPOSITAR/LISTO) |
 
 ---
 
@@ -340,6 +400,9 @@ implementation("com.google.accompanist:accompanist-permissions:0.32.0")
 - [x] Deteccion estable por 2 segundos antes de depositar
 - [x] Boton minimalista de conexion ESP32
 - [x] Barra de progreso de estabilidad
+- [x] **Protocolo v2**: Comunicacion bidireccional con senal LISTO
+- [x] ESP32 envia LISTO al terminar secuencia de deposito
+- [x] Android espera LISTO antes de resumir deteccion (sin timers)
 - [ ] Historial de detecciones/depositos
 - [ ] Animaciones de deposito exitoso
 - [ ] Sonidos/vibracion al depositar
