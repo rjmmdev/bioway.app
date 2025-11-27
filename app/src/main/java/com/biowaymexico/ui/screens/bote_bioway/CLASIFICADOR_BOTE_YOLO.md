@@ -225,11 +225,11 @@ El sistema mapea las 12 clases YOLO a 4 categorias fisicas del bote:
 
 ### DetectionStabilityTracker
 
-Verifica que el mismo material se detecte consistentemente durante **3 segundos** antes de ejecutar el deposito:
+Verifica que el mismo material se detecte consistentemente durante **2 segundos** antes de ejecutar el deposito:
 
 ```kotlin
 object DetectionStabilityTracker {
-    const val STABILITY_DURATION_MS = 3000L  // 3 segundos
+    const val STABILITY_DURATION_MS = 2000L  // 2 segundos
 
     fun update(detection: Detection?): MaterialCategory?
     fun getProgress(): Float  // 0.0 a 1.0
@@ -240,7 +240,7 @@ object DetectionStabilityTracker {
 
 **Flujo de estabilidad:**
 ```
-Deteccion → Clasificar categoria → Mismo material 3s? → Deposito automatico
+Deteccion → Clasificar categoria → Mismo material 2s? → Deposito automatico
      ↑                                    ↓ (si cambia)
      └────────────────────────────────────┘
 ```
@@ -252,7 +252,7 @@ La pantalla incluye un boton de conexion minimalista en la esquina superior dere
 - **OFF (Rojo)**: ESP32 desconectado - click para conectar
 - **ON (Verde)**: ESP32 conectado - click para desconectar
 
-Cuando hay conexion activa y se detecta material estable por 3s:
+Cuando hay conexion activa y se detecta material estable por 2s:
 1. Se muestra barra de progreso llenandose
 2. Al completar, se ejecuta `BluetoothManager.enviarMaterial(categoria)`
 3. El bote gira e inclina automaticamente
@@ -337,7 +337,7 @@ implementation("com.google.accompanist:accompanist-permissions:0.32.0")
 
 - [x] Integrar con BluetoothManager para enviar material detectado al ESP32
 - [x] Clasificar 12 clases YOLO en 4 categorias del bote
-- [x] Deteccion estable por 3 segundos antes de depositar
+- [x] Deteccion estable por 2 segundos antes de depositar
 - [x] Boton minimalista de conexion ESP32
 - [x] Barra de progreso de estabilidad
 - [ ] Historial de detecciones/depositos

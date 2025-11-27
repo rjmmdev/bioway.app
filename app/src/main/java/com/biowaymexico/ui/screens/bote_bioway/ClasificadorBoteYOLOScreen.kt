@@ -318,7 +318,7 @@ enum class MaterialCategory(
  */
 object DetectionStabilityTracker {
     private const val TAG_STAB = "StabilityTracker"
-    private const val STABILITY_DURATION_MS = 3000L  // 3 segundos
+    private const val STABILITY_DURATION_MS = 2000L  // 2 segundos
 
     private var currentCategory: MaterialCategory? = null
     private var categoryStartTime: Long = 0L
@@ -1319,7 +1319,7 @@ private fun DetectionScreen(
                                             )
                                             Text(
                                                 text = if (bluetoothConectado)
-                                                    "Mantenlo ${String.format("%.1f", (1f - stabilityProgress) * 3)}s para depositar"
+                                                    "Mantenlo ${String.format("%.1f", (1f - stabilityProgress) * 2)}s para depositar"
                                                 else
                                                     "Conecta ESP32 para depositar",
                                                 style = MaterialTheme.typography.bodySmall,
