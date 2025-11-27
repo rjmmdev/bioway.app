@@ -1,18 +1,151 @@
 # ClasificadorBoteYOLOScreen - Documentacion Tecnica
 
+## Contexto del Proyecto (IMPORTANTE para futuras sesiones)
+
+Este documento describe el **Clasificador de Residuos con IA** para el **Bote BioWay**, un bote de basura inteligente que:
+
+1. **Detecta residuos** usando un modelo YOLOv8 en tiempo real via camara
+2. **Clasifica** los residuos en 4 categorias fisicas (Plastico, Papel, Metal, General)
+3. **Espera estabilidad** de 2 segundos para confirmar deteccion
+4. **Comunica con ESP32** via Bluetooth para mover servomotores
+5. **Deposita automaticamente** el residuo en el compartimento correcto
+
+### Estado Actual (Noviembre 2024)
+
+| Componente | Estado | Notas |
+|------------|--------|-------|
+| Deteccion YOLO | ✅ Completo | Modelo `waste_detector_v2.tflite` funcionando |
+| Filtro plato blanco | ✅ Completo | `BackgroundPlateFilter` filtra falsos positivos |
+| Clasificacion 4 categorias | ✅ Completo | `MaterialCategory` enum |
+| Estabilidad 2 segundos | ✅ Completo | `DetectionStabilityTracker` |
+| Conexion Bluetooth ESP32 | ✅ Completo | `BluetoothManager` con handshake |
+| **Protocolo v2 (LISTO)** | ✅ Completo | Comunicacion bidireccional sin timers |
+| UI de deposito | ✅ Completo | Barra progreso, estados, confirmacion |
+
+### Arquitectura de Comunicacion (Protocolo v2)
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                        FLUJO COMPLETO DE DEPOSITO                        │
+└──────────────────────────────────────────────────────────────────────────┘
+
+  ANDROID (ClasificadorBoteYOLOScreen)          ESP32 (BoteBioWay)
+  ═══════════════════════════════════          ══════════════════════
+
+  1. Detecta residuo con YOLO
+     ↓
+  2. Filtra plato blanco (BackgroundPlateFilter)
+     ↓
+  3. Clasifica en 4 categorias (MaterialCategory)
+     ↓
+  4. Espera 2s de estabilidad (DetectionStabilityTracker)
+     ↓
+  5. Si ESP32 conectado:
+     ├─────── DEPOSITAR:Plástico ──────────────→ 6. Recibe comando
+     │                                              ↓
+     │  (UI: "Esperando confirmacion...")       7. Ejecuta secuencia:
+     │                                              - moverGiro(-30)
+     │                                              - moverInclinacion(-45)
+     │                                              - delay(400) depositar
+     │                                              - moverInclinacion(0)
+     │                                              - moverGiro(-80) home
+     │                                              ↓
+     │←──────────── LISTO ─────────────────────  8. Envia LISTO
+     ↓
+  9. UI: "✓ Plástico depositado"
+     ↓
+  10. Reset para nueva deteccion
+```
+
+---
+
 ## Descripcion General
 
-`ClasificadorBoteYOLOScreen.kt` es la pantalla de clasificacion de residuos con IA para el **Bote BioWay**. Utiliza un modelo YOLOv8 (TensorFlow Lite) para detectar y clasificar residuos en tiempo real a traves de la camara del dispositivo.
-
-**Ubicacion:** `app/src/main/java/com/biowaymexico/ui/screens/bote_bioway/ClasificadorBoteYOLOScreen.kt`
+`ClasificadorBoteYOLOScreen.kt` es la pantalla principal ubicada en:
+```
+app/src/main/java/com/biowaymexico/ui/screens/bote_bioway/ClasificadorBoteYOLOScreen.kt
+```
 
 **Navegacion:** `BoteBioWayMainScreen` → "Clasificador IA v2" → `ClasificadorBoteYOLOScreen`
 
 ---
 
-## Arquitectura de la Pantalla
+## Componentes del Sistema
 
-### Estados (YoloScreenState)
+### 1. ClasificadorBoteYOLOScreen.kt (1939 lineas)
+
+Contiene TODO el codigo de la pantalla incluyendo:
+
+| Componente | Lineas | Descripcion |
+|------------|--------|-------------|
+| `BackgroundPlateFilter` | 80-232 | Object singleton para filtrar plato blanco |
+| `MaterialCategory` | 239-313 | Enum con 4 categorias y mapeo de clases YOLO |
+| `DetectionStabilityTracker` | 319-407 | Object singleton para estabilidad de 2s |
+| `ROIRect` | 414-424 | Data class para region de interes |
+| `YoloScreenState` | 429-433 | Enum de estados de pantalla |
+| `ClasificadorBoteYOLOScreen` | 443-534 | Composable principal |
+| `ROIConfigurationScreen` | 538-634 | Paso 1: Configurar area |
+| `DetectionScreen` | 967-1395 | Paso 2: Deteccion activa |
+| Funciones de imagen | 1483-1630 | Procesamiento de bitmap |
+| UI Components | 1632-1939 | Overlays, paneles, etc. |
+
+### 2. BluetoothManager.kt
+
+**Ubicacion:** `app/src/main/java/com/biowaymexico/utils/BluetoothManager.kt`
+
+```kotlin
+class BluetoothManager {
+    // Conexion
+    suspend fun conectarConHandshake(): Result<Unit>
+    fun desconectar()
+    fun estaConectado(): Boolean
+
+    // Protocolo v1 (DEPRECATED - mantener por compatibilidad)
+    suspend fun enviarMaterial(material: String): Result<Unit>
+
+    // Protocolo v2 (ACTUAL - usar este)
+    suspend fun depositarYEsperarListo(categoria: String): Result<Unit>
+}
+```
+
+**Constantes importantes:**
+```kotlin
+const val ESP32_NAME = "ESP32_Detector"  // Nombre Bluetooth del ESP32
+const val LISTO_TIMEOUT_MS = 15000L      // 15 segundos max espera LISTO
+val UUID_SPP = "00001101-0000-1000-8000-00805F9B34FB"  // UUID SPP
+```
+
+### 3. ESP32_BoteBioWay.txt (Codigo Arduino)
+
+**Ubicacion:** Raiz del proyecto `ESP32_BoteBioWay.txt`
+
+**Comandos soportados:**
+| Comando | Respuesta | Descripcion |
+|---------|-----------|-------------|
+| `PING` | `PONG` | Handshake de conexion |
+| `DEPOSITAR:CATEGORIA` | `LISTO` | Secuencia completa de deposito |
+| `GIRO:XXX` | `OK` | Mover servo giro (-80 a 160) |
+| `INCL:XXX` | `OK` | Mover servos inclinacion (-45 a 45) |
+| `RESET` | `OK` | Volver a posicion inicial |
+
+**Pines ESP32:**
+- Servo 13: GIRO (plataforma giratoria)
+- Servo 12 + 14: INCLINACION (trabajan juntos, espalda con espalda)
+
+### 4. WasteDetector.kt
+
+**Ubicacion:** `app/src/main/java/com/ultralytics/yolo/WasteDetector.kt`
+
+Wrapper TensorFlow Lite para el modelo YOLO. Parametros configurables:
+```kotlin
+detector.confidenceThreshold = 0.25f  // Umbral confianza
+detector.iouThreshold = 0.4f          // Umbral IoU para NMS
+detector.numItemsThreshold = 30       // Max detecciones
+```
+
+---
+
+## Estados de la Pantalla
 
 ```kotlin
 private enum class YoloScreenState {
@@ -41,73 +174,18 @@ private enum class YoloScreenState {
 │ (CameraPreview +    │   - ROI fijo (no editable)
 │  WasteDetector +    │   - Inferencia en tiempo real
 │  BackgroundFilter)  │   - Filtrado del plato de fondo
-└─────────────────────┘
+└─────────────────────┘   - Deposito automatico si ESP32 conectado
 ```
 
 ---
 
-## Componentes Principales
-
-### 1. ROIRect (Region de Interes)
-
-```kotlin
-data class ROIRect(
-    val left: Float = 0.15f,    // Valores normalizados 0-1
-    val top: Float = 0.15f,
-    val right: Float = 0.85f,
-    val bottom: Float = 0.85f
-)
-```
-
-El ROI define el area de la imagen que sera recortada y enviada al modelo. Solo los objetos dentro de esta area son detectados.
-
-### 2. WasteDetector
-
-Wrapper de TensorFlow Lite para el modelo YOLOv8.
-
-**Archivos del modelo:**
-- Modelo: `app/src/main/assets/models/waste_detector_v2.tflite`
-- Etiquetas: `app/src/main/assets/labels/waste_detector_labels.txt`
-
-**Parametros de deteccion:**
-```kotlin
-detector.confidenceThreshold = 0.25f  // Umbral de confianza minima
-detector.iouThreshold = 0.4f          // Umbral IoU para NMS
-detector.numItemsThreshold = 30       // Maximo de detecciones
-```
-
-**Categorias detectables:**
-- biological (Organico)
-- cardboard (Carton)
-- glass (Vidrio)
-- metal (Metal)
-- paper (Papel)
-- plastic (Plastico generico)
-- plastic-pet, plastic-pe_hd, plastic-pp, plastic-ps, plastic-others
-- trash (Basura)
-
-### 3. BackgroundPlateFilter
-
-Filtro inteligente para ignorar el **plato blanco del bote** que el modelo detecta incorrectamente como plastico.
-
----
-
-## BackgroundPlateFilter - Explicacion Detallada
+## BackgroundPlateFilter - Filtrado de Plato Blanco
 
 ### Problema
 
-El bote BioWay tiene un plato/superficie blanca donde se colocan los residuos. El modelo YOLO a veces detecta este plato como "plastic" con **baja confianza (26-34%)** y **area grande (60-99% del ROI)**.
+El bote BioWay tiene un plato/superficie blanca donde se colocan los residuos. El modelo YOLO detecta este plato como "plastic" con baja confianza.
 
-### Solucion: Filtrado por Confianza + Area
-
-El filtro distingue entre el plato (falso positivo) y objetos reales usando dos criterios:
-
-| Tipo | Confianza | Area |
-|------|-----------|------|
-| **Plato (falso positivo)** | 26-34% (baja) | 60-99% (grande) |
-| **Objeto real** | 70-90% (alta) | 20-50% (mediana) |
-
-### Logica del Filtro
+### Solucion
 
 ```kotlin
 object BackgroundPlateFilter {
@@ -116,33 +194,134 @@ object BackgroundPlateFilter {
 }
 ```
 
-**Caso 1: Un solo plastico detectado**
-```
-SI (confianza < 50%) Y (area > 35%):
-    → FILTRAR (es el plato)
-SINO:
-    → ACEPTAR (es un objeto real)
+**Logica:**
+- Si confianza < 50% Y area > 35% → Filtrar (es el plato)
+- Si hay multiples plasticos → Filtrar el mas grande
+- Otros materiales → Aceptar siempre
+
+---
+
+## MaterialCategory - Clasificacion en 4 Categorias
+
+```kotlin
+enum class MaterialCategory(
+    val displayName: String,
+    val emoji: String,
+    val giro: Int,
+    val inclinacion: Int,
+    val color: Long
+) {
+    PLASTICO("Plástico", "♻️", -30, -45, 0xFF2196F3),
+    PAPEL_CARTON("Papel/Cartón", "📄", -30, 45, 0xFF4CAF50),
+    ALUMINIO_METAL("Aluminio/Metal", "🥫", 59, -45, 0xFF9C27B0),
+    GENERAL("General", "🗑️", 59, 45, 0xFFFF9800);
+}
 ```
 
-**Caso 2: Multiples plasticos detectados**
-```
-→ FILTRAR el de mayor area (el plato)
-→ ACEPTAR todos los demas (objetos reales)
+**Mapeo de clases YOLO:**
+| Categoria | Clases YOLO |
+|-----------|-------------|
+| PLASTICO | plastic, plastic-pet, plastic-pe_hd, plastic-pp, plastic-ps, plastic-others |
+| PAPEL_CARTON | paper, cardboard |
+| ALUMINIO_METAL | metal, glass |
+| GENERAL | biological, trash, otros |
+
+---
+
+## DetectionStabilityTracker - Estabilidad de Deteccion
+
+```kotlin
+object DetectionStabilityTracker {
+    private const val STABILITY_DURATION_MS = 2000L  // 2 segundos
+
+    fun update(detection: Detection?): MaterialCategory?  // Retorna categoria si estable
+    fun getProgress(): Float  // 0.0 a 1.0 para barra de progreso
+    fun getCurrentCategory(): MaterialCategory?
+    fun reset()  // Llamar despues de depositar
+}
 ```
 
-**Otros materiales (carton, vidrio, metal, etc.):**
-```
-→ ACEPTAR siempre (no pueden ser el plato)
+**Flujo:**
+1. Cada frame llama `update()` con la deteccion principal
+2. Si cambia la categoria, se reinicia el contador
+3. Si pasan 2 segundos con misma categoria, retorna la categoria (estable)
+4. Despues de depositar, llamar `reset()`
+
+---
+
+## Protocolo v2 - Comunicacion Bidireccional
+
+### Por que Protocolo v2?
+
+El protocolo v1 usaba timers arbitrarios:
+```kotlin
+// PROTOCOLO v1 (DEPRECATED)
+bluetoothManager.enviarMaterial(categoria)
+delay(2000)  // Esperar 2s arbitrarios
+// Problema: No sabemos si ESP32 termino
 ```
 
-### Ejemplos de Filtrado
+El protocolo v2 usa comunicacion precisa:
+```kotlin
+// PROTOCOLO v2 (ACTUAL)
+bluetoothManager.depositarYEsperarListo(categoria)
+// Retorna cuando ESP32 envia "LISTO"
+// Sin timers arbitrarios
+```
 
-| Deteccion | Confianza | Area | Resultado |
-|-----------|-----------|------|-----------|
-| Plato solo | 34% | 67% | FILTRADO (conf<50% Y area>35%) |
-| Botella PET | 83% | 43% | ACEPTADO (conf>=50%) |
-| Botella pequena | 34% | 32% | ACEPTADO (area<=35%) |
-| Plato + Botella | 34%/82% | 60%/25% | Plato FILTRADO, Botella ACEPTADA |
+### Implementacion Android (BluetoothManager.kt)
+
+```kotlin
+suspend fun depositarYEsperarListo(categoria: String): Result<Unit> = withContext(Dispatchers.IO) {
+    // 1. Enviar comando
+    outputStream?.write("DEPOSITAR:$categoria\n".toByteArray())
+
+    // 2. Esperar LISTO (max 15 segundos)
+    while (System.currentTimeMillis() - startTime < LISTO_TIMEOUT_MS) {
+        if (inputStream?.available() > 0) {
+            val response = // leer respuesta
+            if (response == "LISTO") {
+                return@withContext Result.success(Unit)
+            }
+        }
+        Thread.sleep(50)
+    }
+
+    // 3. Timeout
+    Result.failure(Exception("Timeout esperando LISTO"))
+}
+```
+
+### Implementacion ESP32 (ESP32_BoteBioWay.txt)
+
+```cpp
+if (comando.startsWith("DEPOSITAR:")) {
+    String categoria = comando.substring(10);
+
+    // Determinar movimientos segun categoria
+    int giro, inclinacion;
+    if (categoria.indexOf("PLASTICO") >= 0) {
+        giro = -30; inclinacion = -45;
+    } else if (categoria.indexOf("PAPEL") >= 0) {
+        giro = -30; inclinacion = 45;
+    } // ... etc
+
+    // Ejecutar secuencia completa
+    moverGiro(giro);
+    delay(1000);
+    moverInclinacion(inclinacion);
+    delay(1000);
+    delay(400);  // Depositar
+    moverInclinacion(0);
+    delay(1000);
+    moverGiro(-80);  // Home
+    delay(500);
+
+    // Enviar LISTO
+    SerialBT.println("LISTO");
+    SerialBT.flush();
+}
+```
 
 ---
 
@@ -170,33 +349,44 @@ BackgroundPlateFilter.filterDetections() ──→ Detecciones filtradas
 adjustDetectionsToFullImage() ──→ Coordenadas ajustadas
        │
        ▼
-UI (DetectionOverlay + DetectionResultsPanel)
+DetectionStabilityTracker.update() ──→ Verificar estabilidad
+       │
+       ▼
+Si estable + ESP32 conectado → depositarYEsperarListo()
 ```
 
 ---
 
-## Tags de Logging para Debug
+## Debugging
+
+### Tags de Logging
 
 ```bash
-# Filtrar logs del clasificador
-adb logcat | grep -E "(ClasificadorBoteYOLO|PlateFilter)"
-
-# Solo filtro del plato
-adb logcat | grep PlateFilter
-
-# Solo clasificador principal
+# Clasificador principal
 adb logcat | grep ClasificadorBoteYOLO
 
-# Comunicacion Bluetooth/ESP32 (Protocolo v2)
+# Filtro del plato
+adb logcat | grep PlateFilter
+
+# Bluetooth/ESP32
 adb logcat | grep BluetoothManager
 
 # Ver todo el flujo de deposito
 adb logcat | grep -E "(ClasificadorBoteYOLO|BluetoothManager)"
+
+# Tracker de estabilidad
+adb logcat | grep StabilityTracker
+
+# Categoria de material
+adb logcat | grep MaterialCategory
 ```
 
-### Formato de Logs del Protocolo v2
+### Ejemplo de Logs (Deposito Exitoso)
 
 ```
+═══════════════════════════════════════
+🎯 MATERIAL ESTABLE: Plástico
+   Iniciando depósito con protocolo v2...
 ═══════════════════════════════════════
 🎯 PROTOCOLO v2: DEPOSITAR Y ESPERAR LISTO
    Categoría: Plástico
@@ -208,193 +398,87 @@ adb logcat | grep -E "(ClasificadorBoteYOLO|BluetoothManager)"
 ✅ SEÑAL LISTO RECIBIDA
    Tiempo total: 4523ms
 ═══════════════════════════════════════
+✅ ESP32 confirmó LISTO - Depósito completado: Plástico
+🔄 Reseteando estado para nueva detección...
+✅ Estado reseteado - Listo para nueva detección
 ```
-
-### Formato de Logs del Filtro
-
-```
-═══════════════════════════════════════
-📊 Analizando 1 detecciones
-   ROI: 331x345 = 114195 px²
-   🔹 Plásticos: 1
-   🔹 Otros materiales: 0
-─────────────────────────────────────
-🔍 plastic
-   🎯 Confianza: 34%
-   📐 Tamaño: 222x345 px
-   📊 Área: 67% del ROI
-   🚫 FILTRADO: Confianza baja (34%) + área grande (67%)
-   💡 Probablemente es el plato (falso positivo)
-═══════════════════════════════════════
-✅ Resultado: 0/1 detecciones válidas
-═══════════════════════════════════════
-```
-
----
-
-## Sistema de Deposito Automatico
-
-### MaterialCategory (4 Categorias)
-
-El sistema mapea las 12 clases YOLO a 4 categorias fisicas del bote:
-
-| Categoria | Clases YOLO | Giro | Inclinacion | Color |
-|-----------|-------------|------|-------------|-------|
-| **Plastico** | plastic, plastic-pet, plastic-pe_hd, plastic-pp, plastic-ps, plastic-others | -30° | -45° | Azul |
-| **Papel/Carton** | paper, cardboard | -30° | +45° | Verde |
-| **Aluminio/Metal** | metal, glass | +59° | -45° | Morado |
-| **General** | biological, trash, otros | +59° | +45° | Naranja |
-
-### DetectionStabilityTracker
-
-Verifica que el mismo material se detecte consistentemente durante **2 segundos** antes de ejecutar el deposito:
-
-```kotlin
-object DetectionStabilityTracker {
-    const val STABILITY_DURATION_MS = 2000L  // 2 segundos
-
-    fun update(detection: Detection?): MaterialCategory?
-    fun getProgress(): Float  // 0.0 a 1.0
-    fun getCurrentCategory(): MaterialCategory?
-    fun reset()
-}
-```
-
-**Flujo de estabilidad:**
-```
-Deteccion → Clasificar categoria → Mismo material 2s? → Deposito automatico
-     ↑                                    ↓ (si cambia)
-     └────────────────────────────────────┘
-```
-
-### Integracion con ESP32 (Bluetooth) - Protocolo v2
-
-La pantalla incluye un boton de conexion minimalista en la esquina superior derecha:
-
-- **OFF (Rojo)**: ESP32 desconectado - click para conectar
-- **ON (Verde)**: ESP32 conectado - click para desconectar
-
-#### Protocolo de Comunicacion Bidireccional
-
-El sistema usa comunicacion **bidireccional precisa** sin timers:
-
-```
-┌─────────────────────┐                    ┌─────────────────────┐
-│      Android        │                    │       ESP32         │
-│   (Clasificador)    │                    │   (Bote BioWay)     │
-└─────────────────────┘                    └─────────────────────┘
-         │                                          │
-         │  1. DEPOSITAR:Plástico                   │
-         │─────────────────────────────────────────>│
-         │                                          │ (ejecuta secuencia)
-         │                                          │ - GIRO a posicion
-         │                                          │ - INCL a posicion
-         │                                          │ - Depositar
-         │                                          │ - RESET a home
-         │  2. LISTO                                │
-         │<─────────────────────────────────────────│
-         │                                          │
-         │  (Android resume deteccion)              │
-```
-
-**Comandos ESP32:**
-- `DEPOSITAR:PLASTICO` - Depositar en compartimento plastico
-- `DEPOSITAR:PAPEL` - Depositar en compartimento papel/carton
-- `DEPOSITAR:ALUMINIO` - Depositar en compartimento metal
-- `DEPOSITAR:GENERAL` - Depositar en compartimento general
-
-**Respuesta ESP32:**
-- `LISTO` - Secuencia completada, Android puede continuar
-
-#### Flujo de Deposito
-
-Cuando hay conexion activa y se detecta material estable por 2s:
-1. Se muestra barra de progreso llenandose
-2. Al completar, se ejecuta `BluetoothManager.depositarYEsperarListo(categoria)`
-3. Android muestra "Esperando confirmacion del ESP32..."
-4. El bote gira e inclina automaticamente (secuencia completa)
-5. ESP32 envia "LISTO" cuando termina
-6. Se muestra confirmacion "✓ [Material] depositado"
-7. Se resetea para nueva deteccion
 
 ---
 
 ## Ajuste de Parametros
 
-### Para ajustar sensibilidad del filtro:
+### Filtro del Plato
 
 ```kotlin
-// En BackgroundPlateFilter object:
+// En BackgroundPlateFilter:
+BackgroundPlateFilter.minConfidenceThreshold = 0.50f   // Default
+BackgroundPlateFilter.suspiciousAreaThreshold = 0.35f  // Default
 
-// Bajar si objetos reales con baja confianza son filtrados
-BackgroundPlateFilter.minConfidenceThreshold = 0.40f  // Default: 0.50f
-
-// Subir si el plato no se filtra correctamente
-BackgroundPlateFilter.suspiciousAreaThreshold = 0.40f  // Default: 0.35f
+// Si objetos reales con baja confianza son filtrados → bajar minConfidenceThreshold
+// Si el plato no se filtra → subir suspiciousAreaThreshold
 ```
 
-### Para ajustar el detector YOLO:
+### Detector YOLO
 
 ```kotlin
-// En DetectionScreen, LaunchedEffect:
-
-detector.confidenceThreshold = 0.20f  // Bajar para mas detecciones
-detector.iouThreshold = 0.5f          // Subir para menos overlap
-detector.numItemsThreshold = 10       // Limitar max detecciones
+// En DetectionScreen LaunchedEffect:
+detector.confidenceThreshold = 0.25f  // Default: mas bajo = mas detecciones
+detector.iouThreshold = 0.4f          // Default: mas alto = menos overlap
+detector.numItemsThreshold = 30       // Default: max detecciones
 ```
 
----
-
-## Dependencias Clave
+### Tiempo de Estabilidad
 
 ```kotlin
-// TensorFlow Lite
-implementation("org.tensorflow:tensorflow-lite:2.14.0")
-implementation("org.tensorflow:tensorflow-lite-gpu:2.14.0")
+// En DetectionStabilityTracker:
+private const val STABILITY_DURATION_MS = 2000L  // 2 segundos
 
-// CameraX
-implementation("androidx.camera:camera-core:1.3.1")
-implementation("androidx.camera:camera-camera2:1.3.1")
-implementation("androidx.camera:camera-lifecycle:1.3.1")
-implementation("androidx.camera:camera-view:1.3.1")
-
-// Permisos
-implementation("com.google.accompanist:accompanist-permissions:0.32.0")
+// Aumentar si hay falsos positivos frecuentes
+// Disminuir si el sistema es muy lento
 ```
 
 ---
 
-## Archivos Relacionados
+## Archivos del Sistema
 
-| Archivo | Descripcion |
-|---------|-------------|
-| `ClasificadorBoteYOLOScreen.kt` | Pantalla principal (este archivo) |
-| `WasteDetector.kt` | Wrapper TFLite para YOLO (`com.ultralytics.yolo`) |
-| `BluetoothManager.kt` | Comunicacion Bluetooth con ESP32 (Protocolo v2) |
-| `BoteBioWayMainScreen.kt` | Menu principal del Bote BioWay |
-| `BioWayNavHost.kt` | Navegacion (ruta: `BoteBioWayClasificadorYOLO`) |
-| `waste_detector_v2.tflite` | Modelo YOLO (assets/models/) |
-| `waste_detector_labels.txt` | Etiquetas del modelo (assets/labels/) |
-| `ESP32_BoteBioWay.txt` | Codigo Arduino del ESP32 (soporte DEPOSITAR/LISTO) |
+| Archivo | Ubicacion | Descripcion |
+|---------|-----------|-------------|
+| `ClasificadorBoteYOLOScreen.kt` | `ui/screens/bote_bioway/` | Pantalla principal |
+| `BluetoothManager.kt` | `utils/` | Comunicacion Bluetooth |
+| `WasteDetector.kt` | `com.ultralytics.yolo/` | Wrapper TFLite YOLO |
+| `ESP32_BoteBioWay.txt` | Raiz proyecto | Codigo Arduino ESP32 |
+| `waste_detector_v2.tflite` | `assets/models/` | Modelo YOLO |
+| `waste_detector_labels.txt` | `assets/labels/` | Etiquetas modelo |
+| `BoteBioWayMainScreen.kt` | `ui/screens/bote_bioway/` | Menu principal |
 
 ---
 
 ## Notas de Desarrollo
 
-1. **Limpieza de camara:** Siempre usar `DisposableEffect` para liberar `cameraProvider?.unbindAll()` al salir.
+1. **Coroutines en Compose:** Usar patron de trigger state para ejecutar coroutines desde LaunchedEffect:
+   ```kotlin
+   var trigger by remember { mutableStateOf(0) }
+   LaunchedEffect(trigger) {
+       if (trigger > 0) {
+           // ejecutar coroutine
+       }
+   }
+   // Para disparar: trigger++
+   ```
 
-2. **Estado del ROI:** Usar `rememberUpdatedState` para mantener referencia actualizada en gestos de arrastre.
+2. **Limpieza de camara:** Siempre usar `DisposableEffect` para liberar `cameraProvider?.unbindAll()`.
 
-3. **BackHandler:** Implementado para navegacion correcta con boton de retroceso del sistema.
+3. **ROI en gestos:** Usar `rememberUpdatedState` para mantener referencia actualizada en lambdas de gestos.
 
-4. **Filtro persistente:** `BackgroundPlateFilter` es un `object` singleton, sus parametros persisten durante la sesion.
+4. **Singletons:** `BackgroundPlateFilter` y `DetectionStabilityTracker` son singletons - sus parametros persisten durante la sesion.
 
-5. **Coordenadas:** Las detecciones se hacen en espacio del ROI recortado y luego se ajustan al espacio de imagen completa con `adjustDetectionsToFullImage()`.
+5. **ESP32 Bluetooth:** El nombre debe ser exactamente `ESP32_Detector` para que Android lo encuentre.
 
 ---
 
 ## Proximos Pasos / TODOs
 
+### Completados
 - [x] Integrar con BluetoothManager para enviar material detectado al ESP32
 - [x] Clasificar 12 clases YOLO en 4 categorias del bote
 - [x] Deteccion estable por 2 segundos antes de depositar
@@ -403,7 +487,33 @@ implementation("com.google.accompanist:accompanist-permissions:0.32.0")
 - [x] **Protocolo v2**: Comunicacion bidireccional con senal LISTO
 - [x] ESP32 envia LISTO al terminar secuencia de deposito
 - [x] Android espera LISTO antes de resumir deteccion (sin timers)
+
+### Pendientes
 - [ ] Historial de detecciones/depositos
 - [ ] Animaciones de deposito exitoso
 - [ ] Sonidos/vibracion al depositar
 - [ ] Contador de materiales reciclados por sesion
+- [ ] Manejo de errores mas robusto (reconexion automatica)
+- [ ] Tests unitarios para DetectionStabilityTracker y BackgroundPlateFilter
+
+---
+
+## Referencia Rapida para Futuras Sesiones
+
+**Para modificar el tiempo de estabilidad:**
+→ `DetectionStabilityTracker.STABILITY_DURATION_MS` (linea ~321)
+
+**Para modificar posiciones de servos:**
+→ `MaterialCategory` enum (lineas 246-273)
+→ `ESP32_BoteBioWay.txt` funcion `procesarComando()`
+
+**Para modificar filtro del plato:**
+→ `BackgroundPlateFilter` object (lineas 80-232)
+
+**Para modificar timeout de LISTO:**
+→ `BluetoothManager.LISTO_TIMEOUT_MS` (linea ~32)
+
+**Para agregar nueva categoria:**
+1. Agregar a `MaterialCategory` enum
+2. Agregar mapeo en `MaterialCategory.fromYoloClass()`
+3. Agregar handler en ESP32 `procesarComando()`
