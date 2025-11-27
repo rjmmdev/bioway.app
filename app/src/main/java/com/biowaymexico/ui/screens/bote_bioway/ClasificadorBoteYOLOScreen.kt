@@ -19,6 +19,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.BluetoothConnected
+import androidx.compose.material.icons.filled.BluetoothDisabled
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Crop
@@ -29,6 +31,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.activity.compose.BackHandler
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -42,6 +45,7 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
@@ -49,6 +53,7 @@ import com.ultralytics.yolo.Detection
 import com.ultralytics.yolo.DetectionResult
 import com.ultralytics.yolo.WasteDetector
 import com.biowaymexico.ui.theme.BioWayColors
+import com.biowaymexico.utils.BluetoothManager
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -224,6 +229,180 @@ object BackgroundPlateFilter {
         Log.d(TAG_FILTER, "   Plástico único: filtrar si confianza <${(minConfidenceThreshold*100).toInt()}% Y área >${(suspiciousAreaThreshold*100).toInt()}%")
         Log.d(TAG_FILTER, "   Múltiples plásticos: descartar el de mayor área")
         Log.d(TAG_FILTER, "═══════════════════════════════════════")
+    }
+}
+
+/**
+ * Categorías de materiales para el bote BioWay
+ * Mapea las 12 clases YOLO a 4 categorías físicas del bote
+ */
+enum class MaterialCategory(
+    val displayName: String,
+    val emoji: String,
+    val giro: Int,
+    val inclinacion: Int,
+    val color: Long  // Color en formato Long para usar con Color()
+) {
+    PLASTICO(
+        displayName = "Plástico",
+        emoji = "♻️",
+        giro = -30,
+        inclinacion = -45,
+        color = 0xFF2196F3  // Azul
+    ),
+    PAPEL_CARTON(
+        displayName = "Papel/Cartón",
+        emoji = "📄",
+        giro = -30,
+        inclinacion = 45,
+        color = 0xFF4CAF50  // Verde
+    ),
+    ALUMINIO_METAL(
+        displayName = "Aluminio/Metal",
+        emoji = "🥫",
+        giro = 59,
+        inclinacion = -45,
+        color = 0xFF9C27B0  // Morado
+    ),
+    GENERAL(
+        displayName = "General",
+        emoji = "🗑️",
+        giro = 59,
+        inclinacion = 45,
+        color = 0xFFFF9800  // Naranja
+    );
+
+    companion object {
+        private const val TAG_CAT = "MaterialCategory"
+
+        /**
+         * Clasifica una detección YOLO en una de las 4 categorías
+         */
+        fun fromYoloClass(className: String): MaterialCategory {
+            val lowerName = className.lowercase()
+
+            return when {
+                // PLÁSTICO: todos los tipos de plástico
+                lowerName.contains("plastic") -> {
+                    Log.d(TAG_CAT, "🔵 '$className' → PLÁSTICO")
+                    PLASTICO
+                }
+
+                // PAPEL/CARTÓN
+                lowerName == "paper" || lowerName == "cardboard" ||
+                lowerName.contains("papel") || lowerName.contains("carton") -> {
+                    Log.d(TAG_CAT, "🟢 '$className' → PAPEL/CARTÓN")
+                    PAPEL_CARTON
+                }
+
+                // ALUMINIO/METAL (incluye vidrio para reciclables)
+                lowerName == "metal" || lowerName == "glass" ||
+                lowerName.contains("aluminio") || lowerName.contains("vidrio") -> {
+                    Log.d(TAG_CAT, "🟣 '$className' → ALUMINIO/METAL")
+                    ALUMINIO_METAL
+                }
+
+                // GENERAL: biological, trash, y todo lo demás
+                else -> {
+                    Log.d(TAG_CAT, "🟠 '$className' → GENERAL")
+                    GENERAL
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Tracker de estabilidad de detección
+ * Verifica que el mismo material se detecte consistentemente durante N segundos
+ */
+object DetectionStabilityTracker {
+    private const val TAG_STAB = "StabilityTracker"
+    private const val STABILITY_DURATION_MS = 3000L  // 3 segundos
+
+    private var currentCategory: MaterialCategory? = null
+    private var categoryStartTime: Long = 0L
+    private var isStable = false
+
+    /**
+     * Actualiza el tracker con la detección actual
+     * @return MaterialCategory si está estable por 3 segundos, null si no
+     */
+    fun update(detection: Detection?): MaterialCategory? {
+        val now = System.currentTimeMillis()
+
+        if (detection == null) {
+            // Sin detección - resetear
+            if (currentCategory != null) {
+                Log.d(TAG_STAB, "❌ Detección perdida, reseteando...")
+            }
+            reset()
+            return null
+        }
+
+        val newCategory = MaterialCategory.fromYoloClass(detection.className)
+
+        if (newCategory != currentCategory) {
+            // Cambió la categoría - reiniciar contador
+            Log.d(TAG_STAB, "🔄 Cambio de categoría: ${currentCategory?.displayName ?: "ninguna"} → ${newCategory.displayName}")
+            currentCategory = newCategory
+            categoryStartTime = now
+            isStable = false
+            return null
+        }
+
+        // Misma categoría - verificar tiempo
+        val elapsedTime = now - categoryStartTime
+        val remainingTime = STABILITY_DURATION_MS - elapsedTime
+
+        if (elapsedTime >= STABILITY_DURATION_MS && !isStable) {
+            // ¡Estable por 3 segundos!
+            isStable = true
+            Log.d(TAG_STAB, "✅ ¡ESTABLE! ${newCategory.displayName} detectado por ${elapsedTime}ms")
+            return newCategory
+        }
+
+        if (!isStable && remainingTime > 0) {
+            Log.d(TAG_STAB, "⏳ ${newCategory.displayName}: ${remainingTime/1000.0}s restantes...")
+        }
+
+        return null
+    }
+
+    /**
+     * Obtiene el progreso actual (0.0 a 1.0)
+     */
+    fun getProgress(): Float {
+        if (currentCategory == null) return 0f
+        val elapsed = System.currentTimeMillis() - categoryStartTime
+        return (elapsed.toFloat() / STABILITY_DURATION_MS).coerceIn(0f, 1f)
+    }
+
+    /**
+     * Obtiene la categoría actual siendo rastreada
+     */
+    fun getCurrentCategory(): MaterialCategory? = currentCategory
+
+    /**
+     * Verifica si ya se alcanzó estabilidad
+     */
+    fun isCurrentlyStable(): Boolean = isStable
+
+    /**
+     * Resetea el tracker (después de depositar o al perder detección)
+     */
+    fun reset() {
+        currentCategory = null
+        categoryStartTime = 0L
+        isStable = false
+    }
+
+    /**
+     * Resetea solo el estado de estabilidad (para permitir nuevo depósito)
+     */
+    fun resetStability() {
+        isStable = false
+        categoryStartTime = System.currentTimeMillis()
     }
 }
 
@@ -793,6 +972,7 @@ private fun DetectionScreen(
     onExit: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     // Estado del detector
     var detector by remember { mutableStateOf<WasteDetector?>(null) }
@@ -801,6 +981,48 @@ private fun DetectionScreen(
 
     // Estado de detecciones
     var currentResult by remember { mutableStateOf<DetectionResult?>(null) }
+
+    // ═══════════════════════════════════════════════════════════════
+    // ESTADO BLUETOOTH / ESP32
+    // ═══════════════════════════════════════════════════════════════
+    val bluetoothManager = remember { BluetoothManager() }
+    var bluetoothConectado by remember { mutableStateOf(false) }
+    var estadoConexion by remember { mutableStateOf("Desconectado") }
+    var conectando by remember { mutableStateOf(false) }
+    var triggerConexion by remember { mutableStateOf(0) }  // Trigger para iniciar conexion
+
+    // Manejar conexion Bluetooth cuando se dispara el trigger
+    LaunchedEffect(triggerConexion) {
+        if (triggerConexion == 0) return@LaunchedEffect
+        if (conectando) return@LaunchedEffect
+
+        conectando = true
+        estadoConexion = "Conectando..."
+
+        val result = bluetoothManager.conectarConHandshake()
+        result.fold(
+            onSuccess = {
+                bluetoothConectado = true
+                estadoConexion = "Conectado"
+                Log.d(TAG, "✅ ESP32 conectado")
+            },
+            onFailure = { error ->
+                bluetoothConectado = false
+                estadoConexion = "Error"
+                Log.e(TAG, "❌ Error: ${error.message}")
+            }
+        )
+        conectando = false
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // ESTADO DE ESTABILIDAD Y DEPOSITO
+    // ═══════════════════════════════════════════════════════════════
+    var stabilityProgress by remember { mutableStateOf(0f) }
+    var currentCategory by remember { mutableStateOf<MaterialCategory?>(null) }
+    var isDepositing by remember { mutableStateOf(false) }
+    var depositStatus by remember { mutableStateOf("") }
+    var lastDepositCategory by remember { mutableStateOf<MaterialCategory?>(null) }
 
     // Inicializar detector
     LaunchedEffect(Unit) {
@@ -833,6 +1055,9 @@ private fun DetectionScreen(
                 BackgroundPlateFilter.reset()
                 BackgroundPlateFilter.logConfiguration()
 
+                // Resetear tracker de estabilidad
+                DetectionStabilityTracker.reset()
+
             } catch (e: Exception) {
                 Log.e(TAG, "Error inicializando detector: ${e.message}", e)
                 detectorError = e.message
@@ -840,12 +1065,76 @@ private fun DetectionScreen(
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // LOGICA DE ESTABILIDAD Y AUTO-DEPOSITO
+    // ═══════════════════════════════════════════════════════════════
+    var stableCategoryToDeposit by remember { mutableStateOf<MaterialCategory?>(null) }
+
+    // Actualizar tracker de estabilidad con cada resultado
+    LaunchedEffect(currentResult) {
+        // Solo procesar si no estamos depositando
+        if (isDepositing) return@LaunchedEffect
+
+        val detections = currentResult?.boxes ?: emptyList()
+        val primaryDetection = detections.maxByOrNull { it.confidence }
+
+        // Actualizar tracker de estabilidad
+        val stableCategory = DetectionStabilityTracker.update(primaryDetection)
+
+        // Actualizar UI
+        stabilityProgress = DetectionStabilityTracker.getProgress()
+        currentCategory = DetectionStabilityTracker.getCurrentCategory()
+
+        // Si alcanzamos estabilidad y estamos conectados al ESP32, marcar para depositar
+        if (stableCategory != null && bluetoothConectado && !isDepositing) {
+            stableCategoryToDeposit = stableCategory
+        }
+    }
+
+    // Ejecutar deposito cuando se detecta material estable
+    LaunchedEffect(stableCategoryToDeposit) {
+        val categoryToDeposit = stableCategoryToDeposit ?: return@LaunchedEffect
+        if (isDepositing) return@LaunchedEffect
+
+        Log.d(TAG, "═══════════════════════════════════════")
+        Log.d(TAG, "🎯 MATERIAL ESTABLE: ${categoryToDeposit.displayName}")
+        Log.d(TAG, "   Iniciando depósito automático...")
+        Log.d(TAG, "═══════════════════════════════════════")
+
+        isDepositing = true
+        depositStatus = "Depositando ${categoryToDeposit.displayName}..."
+        stableCategoryToDeposit = null  // Resetear trigger
+
+        val result = bluetoothManager.enviarMaterial(categoryToDeposit.displayName)
+        result.fold(
+            onSuccess = {
+                depositStatus = "✓ ${categoryToDeposit.displayName} depositado"
+                lastDepositCategory = categoryToDeposit
+                Log.d(TAG, "✅ Depósito completado: ${categoryToDeposit.displayName}")
+            },
+            onFailure = { error ->
+                depositStatus = "Error: ${error.message}"
+                Log.e(TAG, "❌ Error en depósito: ${error.message}")
+            }
+        )
+
+        // Esperar un momento para mostrar el resultado
+        kotlinx.coroutines.delay(2000)
+
+        // Resetear para nueva detección
+        isDepositing = false
+        depositStatus = ""
+        DetectionStabilityTracker.reset()
+    }
+
     // Limpiar al salir
     DisposableEffect(Unit) {
         onDispose {
             detector?.close()
             detector = null
-            Log.d(TAG, "WasteDetector cerrado")
+            bluetoothManager.desconectar()
+            DetectionStabilityTracker.reset()
+            Log.d(TAG, "WasteDetector y Bluetooth cerrados")
         }
     }
 
@@ -884,16 +1173,16 @@ private fun DetectionScreen(
 
                 // UI superpuesta
                 Column(modifier = Modifier.fillMaxSize()) {
-                    // Header
+                    // Header con conexion ESP32
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(
                                 Brush.verticalGradient(
-                                    colors = listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent)
+                                    colors = listOf(Color.Black.copy(alpha = 0.8f), Color.Transparent)
                                 )
                             )
-                            .padding(16.dp),
+                            .padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(onClick = onNavigateBack) {
@@ -912,32 +1201,183 @@ private fun DetectionScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Detectando en area configurada",
+                                text = if (bluetoothConectado) "ESP32 conectado" else "ESP32 desconectado",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = BioWayColors.BrandGreen
+                                color = if (bluetoothConectado) BioWayColors.BrandGreen else Color.Red.copy(alpha = 0.8f)
                             )
                         }
 
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = String.format("%.0f ms", currentResult?.inferenceTimeMs ?: 0.0),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = BioWayColors.BrandGreen
-                            )
-                            Text(
-                                text = String.format("%.1f FPS", currentResult?.fps ?: 0.0),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.7f)
-                            )
+                        // Boton de conexion ESP32 (minimalista)
+                        Surface(
+                            onClick = {
+                                if (!bluetoothConectado && !conectando) {
+                                    // Incrementar trigger para iniciar conexion
+                                    triggerConexion++
+                                } else if (bluetoothConectado) {
+                                    bluetoothManager.desconectar()
+                                    bluetoothConectado = false
+                                    estadoConexion = "Desconectado"
+                                }
+                            },
+                            shape = RoundedCornerShape(20.dp),
+                            color = if (bluetoothConectado)
+                                BioWayColors.BrandGreen.copy(alpha = 0.2f)
+                            else
+                                Color.Red.copy(alpha = 0.2f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                if (conectando) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        color = Color.White,
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = if (bluetoothConectado)
+                                            Icons.Default.BluetoothConnected
+                                        else
+                                            Icons.Default.BluetoothDisabled,
+                                        contentDescription = null,
+                                        tint = if (bluetoothConectado) BioWayColors.BrandGreen else Color.Red,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                                Text(
+                                    text = if (conectando) "..." else if (bluetoothConectado) "ON" else "OFF",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    // Panel de resultados
+                    // ═══════════════════════════════════════════════════════════════
+                    // PANEL DE ESTABILIDAD Y DEPOSITO
+                    // ═══════════════════════════════════════════════════════════════
+                    if (currentCategory != null || isDepositing || depositStatus.isNotEmpty()) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color.Black.copy(alpha = 0.85f)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                if (isDepositing) {
+                                    // Estado: Depositando
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            color = BioWayColors.BrandGreen,
+                                            strokeWidth = 3.dp
+                                        )
+                                        Text(
+                                            text = depositStatus,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = BioWayColors.BrandGreen,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                } else if (depositStatus.startsWith("✓")) {
+                                    // Estado: Deposito completado
+                                    Text(
+                                        text = depositStatus,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = BioWayColors.BrandGreen,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                } else if (currentCategory != null) {
+                                    // Estado: Detectando / Esperando estabilidad
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Text(
+                                            text = currentCategory!!.emoji,
+                                            fontSize = 28.sp
+                                        )
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = currentCategory!!.displayName,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = Color(currentCategory!!.color),
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Text(
+                                                text = if (bluetoothConectado)
+                                                    "Mantenlo ${String.format("%.1f", (1f - stabilityProgress) * 3)}s para depositar"
+                                                else
+                                                    "Conecta ESP32 para depositar",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = Color.White.copy(alpha = 0.7f)
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    // Barra de progreso de estabilidad
+                                    LinearProgressIndicator(
+                                        progress = { stabilityProgress },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(6.dp)
+                                            .clip(RoundedCornerShape(3.dp)),
+                                        color = Color(currentCategory!!.color),
+                                        trackColor = Color.White.copy(alpha = 0.2f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Panel de resultados (detecciones)
                     DetectionResultsPanel(
                         detections = currentResult?.boxes ?: emptyList()
                     )
+                }
+
+                // Indicador de FPS y tiempo de inferencia (esquina superior derecha)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 60.dp, end = 8.dp),
+                    contentAlignment = Alignment.TopEnd
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color.Black.copy(alpha = 0.5f)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(8.dp),
+                            horizontalAlignment = Alignment.End
+                        ) {
+                            Text(
+                                text = String.format("%.0f ms", currentResult?.inferenceTimeMs ?: 0.0),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = BioWayColors.BrandGreen
+                            )
+                            Text(
+                                text = String.format("%.1f FPS", currentResult?.fps ?: 0.0),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
                 }
             }
         }

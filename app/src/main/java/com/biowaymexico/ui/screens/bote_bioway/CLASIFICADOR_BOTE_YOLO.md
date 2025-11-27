@@ -210,6 +210,57 @@ adb logcat | grep ClasificadorBoteYOLO
 
 ---
 
+## Sistema de Deposito Automatico
+
+### MaterialCategory (4 Categorias)
+
+El sistema mapea las 12 clases YOLO a 4 categorias fisicas del bote:
+
+| Categoria | Clases YOLO | Giro | Inclinacion | Color |
+|-----------|-------------|------|-------------|-------|
+| **Plastico** | plastic, plastic-pet, plastic-pe_hd, plastic-pp, plastic-ps, plastic-others | -30° | -45° | Azul |
+| **Papel/Carton** | paper, cardboard | -30° | +45° | Verde |
+| **Aluminio/Metal** | metal, glass | +59° | -45° | Morado |
+| **General** | biological, trash, otros | +59° | +45° | Naranja |
+
+### DetectionStabilityTracker
+
+Verifica que el mismo material se detecte consistentemente durante **3 segundos** antes de ejecutar el deposito:
+
+```kotlin
+object DetectionStabilityTracker {
+    const val STABILITY_DURATION_MS = 3000L  // 3 segundos
+
+    fun update(detection: Detection?): MaterialCategory?
+    fun getProgress(): Float  // 0.0 a 1.0
+    fun getCurrentCategory(): MaterialCategory?
+    fun reset()
+}
+```
+
+**Flujo de estabilidad:**
+```
+Deteccion → Clasificar categoria → Mismo material 3s? → Deposito automatico
+     ↑                                    ↓ (si cambia)
+     └────────────────────────────────────┘
+```
+
+### Integracion con ESP32 (Bluetooth)
+
+La pantalla incluye un boton de conexion minimalista en la esquina superior derecha:
+
+- **OFF (Rojo)**: ESP32 desconectado - click para conectar
+- **ON (Verde)**: ESP32 conectado - click para desconectar
+
+Cuando hay conexion activa y se detecta material estable por 3s:
+1. Se muestra barra de progreso llenandose
+2. Al completar, se ejecuta `BluetoothManager.enviarMaterial(categoria)`
+3. El bote gira e inclina automaticamente
+4. Se muestra confirmacion "✓ [Material] depositado"
+5. Se resetea para nueva deteccion
+
+---
+
 ## Ajuste de Parametros
 
 ### Para ajustar sensibilidad del filtro:
@@ -284,8 +335,12 @@ implementation("com.google.accompanist:accompanist-permissions:0.32.0")
 
 ## Proximos Pasos / TODOs
 
-- [ ] Integrar con BluetoothManager para enviar material detectado al ESP32
-- [ ] Agregar confirmacion de usuario antes de depositar
+- [x] Integrar con BluetoothManager para enviar material detectado al ESP32
+- [x] Clasificar 12 clases YOLO en 4 categorias del bote
+- [x] Deteccion estable por 3 segundos antes de depositar
+- [x] Boton minimalista de conexion ESP32
+- [x] Barra de progreso de estabilidad
 - [ ] Historial de detecciones/depositos
-- [ ] Mejorar UI con animaciones de deposito exitoso
-- [ ] Calibracion automatica del filtro del plato
+- [ ] Animaciones de deposito exitoso
+- [ ] Sonidos/vibracion al depositar
+- [ ] Contador de materiales reciclados por sesion
