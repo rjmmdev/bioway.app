@@ -1,0 +1,218 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Funciones de ayuda
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isRecolector() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/Recolectores/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/Recolectores/$(request.auth.uid)).data.isRecolector == "1";
+    }
+
+    // Función para verificar si el usuario es un BoteBioWay
+    function isBoteBioWay() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/BoteBioWay/$(request.auth.uid));
+    }
+
+    // Reglas para Reciclables
+    match /Reciclables/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Reglas para Centros de Acopio
+    match /CentrosDeAcopio/{centroId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Reglas para Usuarios
+    match /UsersInAct/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isOwner(userId) || isRecolector();
+      allow delete: if isOwner(userId);
+
+      // Subcollections: Historial and Residuos
+      match /Historial/{docId} {
+        allow read, create: if isAuthenticated();
+        allow update, delete: if isOwner(userId);
+      }
+
+      match /Residuos/{docId} {
+        allow read, create: if isAuthenticated();
+        allow update: if isOwner(userId) || isRecolector();
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    // Reglas para Recolectores
+    match /Recolectores/{recolectorId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isOwner(recolectorId);
+    }
+
+    // Reglas para Brindador
+    match /Brindador/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isBoteBioWay());
+      allow create: if isAuthenticated() && isOwner(userId);
+      // Permitir update al dueño O a BoteBioWay (solo campos específicos)
+      allow update: if isAuthenticated() && (
+        isOwner(userId) ||
+        (isBoteBioWay() &&
+         // BoteBioWay puede modificar: puntos, nivel, kg, materiales, actividad y sesión temporal
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+           'bioCoins', 'nivel', 'totalKgReciclados', 'materialesReciclados',
+           'ultimaActividad', 'sesionActiva'
+         ]))
+      );
+      allow delete: if false;
+
+      // Nota: sesionActiva es un campo temporal que contiene la sesión de reciclaje en curso
+      // Se elimina automáticamente cuando la sesión finaliza
+    }
+
+    // Reglas para Recolector
+    match /Recolector/{userId} {
+      allow read: if isAuthenticated() && isOwner(userId);
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && isOwner(userId);
+      allow delete: if false;
+    }
+
+    // Reglas para CentroAcopio
+    match /CentroAcopio/{userId} {
+      allow read: if isAuthenticated() && isOwner(userId);
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && isOwner(userId);
+      allow delete: if false;
+    }
+
+    // Reglas para Maestro
+    match /Maestro/{userId} {
+      allow read: if isAuthenticated() && isOwner(userId);
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && isOwner(userId);
+      allow delete: if false;
+    }
+
+    // Reglas para BoteBioWay
+    match /BoteBioWay/{userId} {
+      allow read: if isAuthenticated() && isOwner(userId);
+      allow create: if isAuthenticated() && (isOwner(userId) || request.auth.token.email == 'maestro@bioway.com.mx');
+      allow update: if isAuthenticated() && isOwner(userId);
+      allow delete: if false;
+    }
+
+    // Reglas para Configuración
+    match /Config/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Reglas para Horarios
+    match /Horarios/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // Reglas para el Directorio de Empresas
+    match /companies/{companyId} {
+      allow read: if true;  // Lectura pública del directorio
+      allow create, update: if isAuthenticated() && isOwner(request.auth.uid);
+      allow delete: if false;
+    }
+
+    // Reglas para Sesiones
+    match /sessions/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // ===== REGLAS NUEVAS PARA TRAZABILIDAD =====
+
+    // Reglas para la configuración de trazabilidad (APK)
+    match /trazabilidad_config/{document} {
+      // Todos los usuarios autenticados pueden leer (para descargar APK)
+      allow read: if isAuthenticated();
+      // Admin de BioWay puede escribir todo
+      allow write: if isAuthenticated() &&
+        request.auth.token.email == 'maestro@bioway.com.mx';
+      // Admin de ECOCE solo puede actualizar (para incrementar contador de descargas)
+      allow update: if isAuthenticated() &&
+        request.auth.token.email == 'maestro@ecoce.mx' &&
+        // Solo permitir actualizar el campo downloadCount
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloadCount']);
+    }
+
+    // Reglas para administradores de trazabilidad
+    match /trazabilidad_admin/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow write: if isAuthenticated() &&
+        request.auth.uid == userId &&
+        request.auth.token.email == 'maestro@bioway.com.mx';
+    }
+
+    // Reglas para usuarios de trazabilidad
+    match /trazabilidad_users/{userId} {
+      allow read: if isAuthenticated() &&
+        (request.auth.uid == userId || request.auth.token.email == 'maestro@bioway.com.mx');
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+
+      // Subcolección de comentarios
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && request.auth.uid == userId;
+        allow update, delete: if isAuthenticated() &&
+          (request.auth.uid == userId || request.auth.token.email == 'maestro@bioway.com.mx');
+      }
+
+      // Subcolección de borradores de comentarios
+      match /comment_drafts/{draftId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
+
+      // Subcolección de borradores antiguos (compatibilidad)
+      match /drafts/{draftId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
+    }
+
+    // Reglas para estadísticas de trazabilidad
+    match /trazabilidad_stats/{document} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() &&
+        (request.auth.token.email == 'maestro@bioway.com.mx' ||
+         request.auth.token.email == 'maestro@ecoce.mx');
+    }
+
+    // Reglas para solicitudes de funcionalidades
+    match /feature_requests/{requestId} {
+      // ECOCE puede crear y leer sus propias solicitudes
+      // BioWay puede leer y actualizar todas las solicitudes
+      allow create: if isAuthenticated() &&
+        request.auth.token.email == 'maestro@ecoce.mx';
+      allow read: if isAuthenticated() &&
+        (request.auth.token.email == 'maestro@bioway.com.mx' ||
+         request.auth.token.email == 'maestro@ecoce.mx');
+      allow update: if isAuthenticated() &&
+        request.auth.token.email == 'maestro@bioway.com.mx';
+      allow delete: if false; // No se permite eliminar solicitudes
+    }
+
+    // Regla por defecto para cualquier otra colección
+    match /{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+  }
+}

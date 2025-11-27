@@ -1,0 +1,65 @@
+// =============================================================================
+// EJEMPLO DE build.gradle PARA IMPLEMENTAR EL MODELO YOLO EN TU APP ANDROID
+// =============================================================================
+// Copia las dependencias relevantes a tu archivo build.gradle (app level)
+// =============================================================================
+
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace "com.tuapp.nombre"  // Cambia esto por tu namespace
+    compileSdkVersion 34
+
+    defaultConfig {
+        applicationId 'com.tuapp.nombre'  // Cambia esto por tu app ID
+        minSdkVersion 24  // Minimo requerido para TensorFlow Lite
+        targetSdkVersion 34
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    // IMPORTANTE: No comprimir archivos .tflite
+    aaptOptions {
+        noCompress "tflite"
+    }
+}
+
+dependencies {
+    // AndroidX Core
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.core:core-ktx:1.12.0'
+
+    // =========================================================================
+    // DEPENDENCIAS REQUERIDAS PARA EL MODELO YOLO
+    // =========================================================================
+
+    // TensorFlow Lite - Core (REQUERIDO)
+    implementation 'org.tensorflow:tensorflow-lite:2.14.0'
+
+    // TensorFlow Lite - Support Library (REQUERIDO para ImageProcessor)
+    implementation 'org.tensorflow:tensorflow-lite-support:0.4.4'
+
+    // TensorFlow Lite - GPU Delegate (OPCIONAL pero recomendado para mejor rendimiento)
+    implementation 'org.tensorflow:tensorflow-lite-gpu:2.14.0'
+    implementation 'org.tensorflow:tensorflow-lite-gpu-api:2.14.0'
+
+    // =========================================================================
+    // FIN DE DEPENDENCIAS YOLO
+    // =========================================================================
+
+    // Otras dependencias de tu app...
+}

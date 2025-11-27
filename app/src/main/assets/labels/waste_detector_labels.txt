@@ -1,0 +1,12 @@
+biological
+cardboard
+glass
+metal
+paper
+plastic
+plastic-Others
+plastic-PET
+plastic-PE_HD
+plastic-PP
+plastic-PS
+trash

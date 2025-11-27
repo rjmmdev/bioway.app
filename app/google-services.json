@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "698699032883",
+    "firebase_url": "https://software-4e6b6-default-rtdb.firebaseio.com",
+    "project_id": "software-4e6b6",
+    "storage_bucket": "software-4e6b6.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:698699032883:android:71278ee33ff1ca5f72f646",
+        "android_client_info": {
+          "package_name": "com.bioway.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDn3WWm3Gc7-gOOClKGBgM1fbF2rI4PKyI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:698699032883:android:569f7735325bd74872f646",
+        "android_client_info": {
+          "package_name": "com.biowaymexico"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDn3WWm3Gc7-gOOClKGBgM1fbF2rI4PKyI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

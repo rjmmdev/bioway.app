@@ -1,0 +1,38 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Reglas para la carpeta de APKs
+    match /apk/{fileName} {
+      // Permitir lectura a usuarios autenticados y específicamente a admin de ECOCE
+      allow read: if request.auth != null &&
+        (request.auth.token.email == 'maestro@bioway.com.mx' ||
+         request.auth.token.email == 'maestro@ecoce.mx');
+
+      // Permitir escritura y eliminación solo al admin de BioWay
+      allow write, delete: if request.auth != null &&
+        request.auth.token.email == 'maestro@bioway.com.mx';
+    }
+
+    // Reglas para imágenes de comentarios de trazabilidad
+    match /trazabilidad/comments/{userId}/{fileName} {
+      // Permitir lectura a admins de BioWay y ECOCE
+      allow read: if request.auth != null &&
+        (request.auth.token.email == 'maestro@bioway.com.mx' ||
+         request.auth.token.email == 'maestro@ecoce.mx');
+
+      // Permitir escritura solo al usuario propietario (ECOCE)
+      allow write: if request.auth != null &&
+        request.auth.uid == userId &&
+        request.auth.token.email == 'maestro@ecoce.mx' &&
+        // Validar que sea una imagen y no exceda 5MB
+        request.resource.size < 5 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+    }
+
+    // Reglas para otras carpetas (si las hay en el futuro)
+    match /{allPaths=**} {
+      // Por defecto, denegar acceso a menos que se especifique arriba
+      allow read, write: if false;
+    }
+  }
+}

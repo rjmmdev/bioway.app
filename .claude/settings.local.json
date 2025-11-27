@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(./gradlew assembleDebug:*)",
+      "Bash(./gradlew clean:*)",
+      "Bash(./gradlew:*)",
+      "WebSearch",
+      "Bash(git checkout:*)",
+      "Bash(cat:*)",
+      "WebFetch(domain:fonts.google.com)",
+      "Bash(curl:*)",
+      "Bash(awk:*)",
+      "Bash(unzip:*)",
+      "Bash(pip3 install:*)",
+      "Bash(firebase projects:list:*)",
+      "Bash(firebase use:*)",
+      "Bash(firebase init:*)",
+      "Bash(firebase firestore:get:*)",
+      "Bash(firebase firestore:delete:*)",
+      "Bash(npm install)",
+      "Bash(sudo chown:*)",
+      "Bash(npm install:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(firebase functions:delete:*)",
+      "Bash(firebase functions:log:*)",
+      "Bash(adb logcat:*)",
+      "Bash(cp:*)",
+      "Bash(mkdir:*)",
+      "Bash(git merge:*)",
+      "Bash(git stash:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

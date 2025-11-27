@@ -1,0 +1,285 @@
+#include "BluetoothSerial.h"
+#include <ESP32Servo.h>
+
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run `make menuconfig` to enable it
+#endif
+
+BluetoothSerial SerialBT;
+String dispositivoNombre = "ESP32_Detector";
+
+// Pines para los tres servos
+const int servo13Pin = 13;  // Servo de GIRO
+const int servo12Pin = 12;  // Servo de INCLINACIÓN (trabaja con 14)
+const int servo14Pin = 14;  // Servo de INCLINACIÓN (trabaja con 12)
+
+// Objetos Servo
+Servo servo13;
+Servo servo12;
+Servo servo14;
+
+// Posiciones actuales (permiten negativos)
+int posicionGiro = 0;        // Servo 13: -80 a 160
+int posicionInclinacion = 0; // Servos 12 y 14: -48 a 48 (movimiento conjunto)
+
+void setup() {
+  Serial.begin(115200);
+
+  // Configurar los tres servos
+  // Servo 13: Rango máximo de pulso para máximo torque
+  servo13.attach(servo13Pin, 400, 2600);
+  servo12.attach(servo12Pin);
+  servo14.attach(servo14Pin);
+
+  // Posición inicial (brazo hacia arriba, permite +/-45° de inclinación)
+  servo13.write(0);
+  servo12.write(135);  // Posición neutra para permitir movimiento en ambas direcciones
+  servo14.write(45);   // Posición neutra para permitir movimiento en ambas direcciones
+  posicionGiro = 0;
+  posicionInclinacion = 0;
+
+  Serial.println("\n\n");
+  Serial.println("═══════════════════════════════════════════════════════════");
+  Serial.println("       ESP32 BOTE BIOWAY - MODO PRUEBA SERVOS");
+  Serial.println("═══════════════════════════════════════════════════════════");
+  Serial.println("Servos inicializados:");
+  Serial.println("  - Servo 13 (GIRO): 0°");
+  Serial.println("  - Servo 12 (INCLINACIÓN): 135° (neutro)");
+  Serial.println("  - Servo 14 (INCLINACIÓN): 45° (neutro)");
+  Serial.println("═══════════════════════════════════════════════════════════");
+  Serial.println("COMANDOS DISPONIBLES:");
+  Serial.println("");
+  Serial.println("  PING          → Handshake (responde PONG)");
+  Serial.println("");
+  Serial.println("  GIRO:XXX      → Mover servo 13 a posición XXX (-80 a 160)");
+  Serial.println("                  Ejemplo: GIRO:90 o GIRO:-45");
+  Serial.println("");
+  Serial.println("  INCL:XXX      → Mover servos 12 y 14 juntos (-45 a 45)");
+  Serial.println("                  Servo 12: 135 - XXX");
+  Serial.println("                  Servo 14: 45 + XXX");
+  Serial.println("                  Ejemplo: INCL:45 o INCL:-45");
+  Serial.println("");
+  Serial.println("  GUARDAR       → Muestra las posiciones actuales");
+  Serial.println("                  para copiarlas al código principal");
+  Serial.println("");
+  Serial.println("  RESET         → Volver a posición inicial (0, 0)");
+  Serial.println("═══════════════════════════════════════════════════════════");
+
+  // Inicializar Bluetooth
+  SerialBT.begin(dispositivoNombre);
+  Serial.println("📡 Bluetooth: " + dispositivoNombre);
+  Serial.println("═══════════════════════════════════════════════════════════");
+  Serial.println("✅ MODO PRUEBA LISTO");
+  Serial.println("⏳ Esperando conexión del celular...");
+  Serial.println("═══════════════════════════════════════════════════════════\n");
+}
+
+void loop() {
+  // Verificar si hay datos disponibles por Bluetooth
+  if (SerialBT.available()) {
+    String comando = SerialBT.readStringUntil('\n');
+    comando.trim();
+
+    if (comando.length() > 0) {
+      procesarComando(comando);
+    }
+  }
+
+  // También leer del Serial para pruebas locales
+  if (Serial.available()) {
+    String comando = Serial.readStringUntil('\n');
+    comando.trim();
+
+    if (comando.length() > 0) {
+      procesarComando(comando);
+    }
+  }
+
+  delay(50);
+}
+
+void procesarComando(String comando) {
+  Serial.println("\n═══════════════════════════════════════");
+  Serial.print("📥 Comando recibido: ");
+  Serial.println(comando);
+  Serial.println("═══════════════════════════════════════");
+
+  // PING - Handshake
+  if (comando == "PING") {
+    SerialBT.println("PONG");
+    SerialBT.flush();
+    Serial.println("🤝 Handshake: PONG enviado");
+    return;
+  }
+
+  // GIRO:XXX - Mover servo 13 (soporta negativos)
+  if (comando.startsWith("GIRO:")) {
+    String valorStr = comando.substring(5);
+    int valor = valorStr.toInt();
+
+    // Validar rango (-80 a 160)
+    if (valor < -80) valor = -80;
+    if (valor > 160) valor = 160;
+
+    // Convertir a ángulo de servo (0-180)
+    // -80 -> servo 0, 0 -> servo 80, 160 -> servo 240 (limitado a 180)
+    int anguloServo = valor + 80;  // Offset para que -80 sea 0
+    if (anguloServo > 180) anguloServo = 180;
+    if (anguloServo < 0) anguloServo = 0;
+
+    Serial.print("🔄 Moviendo GIRO (Servo 13) a: ");
+    Serial.print(valor);
+    Serial.print("° (servo real: ");
+    Serial.print(anguloServo);
+    Serial.println("°)");
+
+    // Movimiento directo (máxima velocidad)
+    servo13.write(anguloServo);
+    posicionGiro = valor;
+
+    delay(300);  // Pequeña espera para que llegue
+
+    Serial.println("✅ GIRO completado");
+    SerialBT.println("OK");
+    SerialBT.flush();
+
+    mostrarPosicionActual();
+    return;
+  }
+
+  // INCL:XXX - Mover servos 12 y 14 juntos (soporta negativos)
+  // Los servos están espalda con espalda, por eso uno sube cuando el otro baja
+  //
+  // POSICIÓN NEUTRA (brazo hacia arriba): S12=135°, S14=45°
+  //
+  // Para inclinar hacia ADELANTE (+45°):
+  //   S12: 135 - 45 = 90° (baja)
+  //   S14: 45 + 45 = 90° (sube)
+  //
+  // Para inclinar hacia ATRÁS (-45°):
+  //   S12: 135 - (-45) = 180° (sube)
+  //   S14: 45 + (-45) = 0° (baja)
+  //
+  if (comando.startsWith("INCL:")) {
+    String valorStr = comando.substring(5);
+    int valor = valorStr.toInt();
+
+    // Validar rango (-45 a 45)
+    if (valor < -45) valor = -45;
+    if (valor > 45) valor = 45;
+
+    // Calcular posiciones desde la posición neutra (S12=135, S14=45)
+    // S12 baja cuando inclinamos hacia adelante (valor positivo)
+    // S14 sube cuando inclinamos hacia adelante (valor positivo)
+    int pos12 = 135 - valor;  // +45 → 90°, -45 → 180°
+    int pos14 = 45 + valor;   // +45 → 90°, -45 → 0°
+
+    // Limitar a rangos válidos del servo (0-180)
+    if (pos12 > 180) pos12 = 180;
+    if (pos12 < 0) pos12 = 0;
+    if (pos14 > 180) pos14 = 180;
+    if (pos14 < 0) pos14 = 0;
+
+    Serial.print("🔄 Moviendo INCLINACIÓN a: ");
+    Serial.print(valor);
+    Serial.println("°");
+    Serial.print("   Servo 12: ");
+    Serial.print(pos12);
+    Serial.println("°");
+    Serial.print("   Servo 14: ");
+    Serial.print(pos14);
+    Serial.println("°");
+
+    servo12.write(pos12);
+    servo14.write(pos14);
+    posicionInclinacion = valor;
+
+    delay(300);  // Pequeña espera para que lleguen
+
+    Serial.println("✅ INCLINACIÓN completada");
+    SerialBT.println("OK");
+    SerialBT.flush();
+
+    mostrarPosicionActual();
+    return;
+  }
+
+  // GUARDAR - Mostrar posiciones para copiar
+  if (comando == "GUARDAR") {
+    Serial.println("\n╔═══════════════════════════════════════════════════════════╗");
+    Serial.println("║         POSICIONES ACTUALES PARA COPIAR                   ║");
+    Serial.println("╠═══════════════════════════════════════════════════════════╣");
+    Serial.print("║  Giro (Servo 13):        ");
+    Serial.print(posicionGiro);
+    Serial.println("°                            ║");
+    Serial.print("║  Inclinación:            ");
+    Serial.print(posicionInclinacion);
+    Serial.println("°                            ║");
+    Serial.print("║  → Servo 12:             ");
+    Serial.print(135 - posicionInclinacion);
+    Serial.println("°                           ║");
+    Serial.print("║  → Servo 14:             ");
+    Serial.print(45 + posicionInclinacion);
+    Serial.println("°                            ║");
+    Serial.println("╠═══════════════════════════════════════════════════════════╣");
+    Serial.println("║  Código para ESP32_BoteBioWay.txt:                        ║");
+    Serial.println("║                                                           ║");
+    Serial.print("║  servo13.write(");
+    Serial.print(posicionGiro);
+    Serial.println(");  // Giro                           ║");
+    Serial.print("║  servo12.write(");
+    Serial.print(135 - posicionInclinacion);
+    Serial.println("); // Inclinación                      ║");
+    Serial.print("║  servo14.write(");
+    Serial.print(45 + posicionInclinacion);
+    Serial.println(");  // Inclinación                      ║");
+    Serial.println("╚═══════════════════════════════════════════════════════════╝\n");
+
+    // Enviar al celular en formato simple
+    String respuesta = "GIRO:" + String(posicionGiro) + ",INCL:" + String(posicionInclinacion);
+    SerialBT.println(respuesta);
+    SerialBT.flush();
+    return;
+  }
+
+  // RESET - Volver a posición inicial
+  if (comando == "RESET") {
+    Serial.println("🔄 Reseteando a posición inicial...");
+
+    servo13.write(0);
+    servo12.write(135);
+    servo14.write(45);
+    posicionGiro = -80;
+    posicionInclinacion = 0;
+
+    delay(500);
+
+    Serial.println("✅ Posición inicial restaurada");
+    SerialBT.println("OK");
+    SerialBT.flush();
+
+    mostrarPosicionActual();
+    return;
+  }
+
+  // Comando no reconocido
+  Serial.println("❌ Comando no reconocido");
+  Serial.println("   Comandos válidos: PING, GIRO:XXX, INCL:XXX, GUARDAR, RESET");
+  SerialBT.println("ERROR");
+  SerialBT.flush();
+}
+
+void mostrarPosicionActual() {
+  Serial.println("\n📍 Posición actual:");
+  Serial.print("   GIRO (Servo 13): ");
+  Serial.print(posicionGiro);
+  Serial.println("°");
+  Serial.print("   INCLINACIÓN: ");
+  Serial.print(posicionInclinacion);
+  Serial.print("° (S12:");
+  Serial.print(135 - posicionInclinacion);
+  Serial.print("°, S14:");
+  Serial.print(45 + posicionInclinacion);
+  Serial.println("°)");
+  Serial.println("");
+}
