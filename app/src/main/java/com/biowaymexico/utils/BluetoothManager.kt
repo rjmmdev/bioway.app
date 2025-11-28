@@ -1,10 +1,16 @@
 package com.biowaymexico.utils
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager as AndroidBluetoothManager
 import android.bluetooth.BluetoothSocket
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
@@ -21,7 +27,7 @@ import java.util.*
  * - ESP32 responde: LISTO (cuando termina)
  * - Android resume detección
  */
-class BluetoothManager {
+class BluetoothManager(private val context: Context? = null) {
 
     companion object {
         private const val TAG = "BluetoothManager"
@@ -30,6 +36,18 @@ class BluetoothManager {
 
         // Timeout largo para esperar LISTO (secuencia completa ~4 segundos)
         private const val LISTO_TIMEOUT_MS = 15000L
+
+        /**
+         * Verificar si los permisos de Bluetooth están otorgados
+         */
+        fun hasBluetoothPermissions(context: Context): Boolean {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true // En versiones anteriores a Android 12, no se necesitan estos permisos específicos
+            }
+        }
     }
 
     private var bluetoothAdapter: BluetoothAdapter? = null
@@ -137,6 +155,15 @@ class BluetoothManager {
     @SuppressLint("MissingPermission")
     suspend fun conectarConHandshake(): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            // Verificar permisos de Bluetooth primero
+            if (context != null && !hasBluetoothPermissions(context)) {
+                Log.e(TAG, "═══════════════════════════════════════")
+                Log.e(TAG, "❌ ERROR: Permisos de Bluetooth no otorgados")
+                Log.e(TAG, "   Se requieren BLUETOOTH_CONNECT y BLUETOOTH_SCAN")
+                Log.e(TAG, "═══════════════════════════════════════")
+                return@withContext Result.failure(Exception("Permisos de Bluetooth no otorgados. Por favor otorgue los permisos en configuración."))
+            }
+
             Log.d(TAG, "═══════════════════════════════════════")
             Log.d(TAG, "🔍 Iniciando conexión automática...")
             Log.d(TAG, "═══════════════════════════════════════")
@@ -282,15 +309,21 @@ class BluetoothManager {
      * NUEVO MÉTODO v2: Depositar material y esperar señal LISTO del ESP32
      *
      * Protocolo de comunicación bidireccional:
-     * 1. Android envía: DEPOSITAR:CATEGORIA
+     * 1. Android envía: DEPOSITAR:GIRO,INCL (valores numéricos)
      * 2. ESP32 ejecuta secuencia completa (GIRO→INCL→depositar→RESET)
      * 3. ESP32 responde: LISTO
      * 4. Este método retorna cuando recibe LISTO
      *
      * @param categoria Nombre de la categoría (Plástico, Papel/Cartón, Aluminio/Metal, General)
+     * @param giro Valor de giro (-80 a 160)
+     * @param inclinacion Valor de inclinación (-45 a 45)
      * @return Result.success cuando ESP32 confirma LISTO, Result.failure si timeout o error
      */
-    suspend fun depositarYEsperarListo(categoria: String): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun depositarYEsperarListo(
+        categoria: String,
+        giro: Int,
+        inclinacion: Int
+    ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             if (bluetoothSocket?.isConnected != true) {
                 return@withContext Result.failure(Exception("No conectado al ESP32"))
@@ -299,10 +332,12 @@ class BluetoothManager {
             Log.d(TAG, "═══════════════════════════════════════")
             Log.d(TAG, "🎯 PROTOCOLO v2: DEPOSITAR Y ESPERAR LISTO")
             Log.d(TAG, "   Categoría: $categoria")
+            Log.d(TAG, "   Giro: $giro°")
+            Log.d(TAG, "   Inclinación: $inclinacion°")
             Log.d(TAG, "═══════════════════════════════════════")
 
-            // Enviar comando DEPOSITAR:CATEGORIA
-            val comando = "DEPOSITAR:$categoria"
+            // Enviar comando DEPOSITAR:GIRO,INCL con valores numéricos
+            val comando = "DEPOSITAR:$giro,$inclinacion"
             Log.d(TAG, "📤 Enviando: $comando")
             outputStream?.write("$comando\n".toByteArray())
             outputStream?.flush()

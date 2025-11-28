@@ -8,7 +8,9 @@
 BluetoothSerial SerialBT;
 String dispositivoNombre = "ESP32_Detector";
 
-// Pines para los tres servos
+// ═══════════════════════════════════════════════════════════
+// PINES SERVOS (NO MODIFICAR)
+// ═══════════════════════════════════════════════════════════
 const int servo13Pin = 13;  // Servo de GIRO
 const int servo12Pin = 12;  // Servo de INCLINACIÓN (trabaja con 14)
 const int servo14Pin = 14;  // Servo de INCLINACIÓN (trabaja con 12)
@@ -22,11 +24,48 @@ Servo servo14;
 int posicionGiro = -80;      // Servo 13: -80 a 160 (real: 0 a 180)
 int posicionInclinacion = 0; // Servos 12 y 14: -45 a 45 (movimiento conjunto)
 
+// ═══════════════════════════════════════════════════════════
+// PINES SENSORES ULTRASÓNICOS HC-SR04
+// ═══════════════════════════════════════════════════════════
+// Sensor PLÁSTICO
+const int TRIG_PLASTICO = 25;
+const int ECHO_PLASTICO = 26;
+
+// Sensor PAPEL/CARTÓN
+const int TRIG_PAPEL = 27;
+const int ECHO_PAPEL = 32;
+
+// Sensor ALUMINIO/METAL
+const int TRIG_ALUMINIO = 33;
+const int ECHO_ALUMINIO = 23;
+
+// Sensor GENERAL
+const int TRIG_GENERAL = 19;
+const int ECHO_GENERAL = 18;
+
+// ═══════════════════════════════════════════════════════════
+// CONFIGURACIÓN SENSORES ULTRASÓNICOS
+// ═══════════════════════════════════════════════════════════
+const float DISTANCIA_FONDO = 82.5;    // Distancia sensor → fondo del bote (cm)
+const float UMBRAL_LLENO = 25.0;       // Distancia sensor → basura cuando está lleno (cm)
+const float ESPACIO_UTIL = 57.5;       // DISTANCIA_FONDO - UMBRAL_LLENO (cm)
+const int OBJETOS_PARA_MEDICION = 10;  // Cada cuántos objetos medir niveles
+
+// Contador de objetos depositados
+int contadorObjetos = 0;
+
+// Últimas mediciones (en cm desde el sensor)
+float nivelPlastico = DISTANCIA_FONDO;
+float nivelPapel = DISTANCIA_FONDO;
+float nivelAluminio = DISTANCIA_FONDO;
+float nivelGeneral = DISTANCIA_FONDO;
+
 void setup() {
   Serial.begin(115200);
 
-  // Configurar los tres servos
-  // Servo 13: Rango máximo de pulso para máximo torque
+  // ═══════════════════════════════════════════════════════════
+  // CONFIGURAR SERVOS (NO MODIFICAR)
+  // ═══════════════════════════════════════════════════════════
   servo13.attach(servo13Pin, 400, 2600);
   servo12.attach(servo12Pin);
   servo14.attach(servo14Pin);
@@ -38,6 +77,25 @@ void setup() {
   posicionGiro = -80;
   posicionInclinacion = 0;
 
+  // ═══════════════════════════════════════════════════════════
+  // CONFIGURAR SENSORES ULTRASÓNICOS
+  // ═══════════════════════════════════════════════════════════
+  // PLÁSTICO
+  pinMode(TRIG_PLASTICO, OUTPUT);
+  pinMode(ECHO_PLASTICO, INPUT);
+
+  // PAPEL/CARTÓN
+  pinMode(TRIG_PAPEL, OUTPUT);
+  pinMode(ECHO_PAPEL, INPUT);
+
+  // ALUMINIO/METAL
+  pinMode(TRIG_ALUMINIO, OUTPUT);
+  pinMode(ECHO_ALUMINIO, INPUT);
+
+  // GENERAL
+  pinMode(TRIG_GENERAL, OUTPUT);
+  pinMode(ECHO_GENERAL, INPUT);
+
   Serial.println("\n\n");
   Serial.println("═══════════════════════════════════════════════════════════");
   Serial.println("       ESP32 BOTE BIOWAY - PRODUCCIÓN");
@@ -46,15 +104,41 @@ void setup() {
   Serial.println("  - Servo 13 (GIRO): 0° (posición -80)");
   Serial.println("  - Servo 12 (INCLINACIÓN): 135° (neutro)");
   Serial.println("  - Servo 14 (INCLINACIÓN): 45° (neutro)");
+  Serial.println("───────────────────────────────────────────────────────────");
+  Serial.println("Sensores ultrasónicos inicializados:");
+  Serial.println("  - PLÁSTICO:       TRIG=GPIO25, ECHO=GPIO26");
+  Serial.println("  - PAPEL/CARTÓN:   TRIG=GPIO27, ECHO=GPIO32");
+  Serial.println("  - ALUMINIO/METAL: TRIG=GPIO33, ECHO=GPIO23");
+  Serial.println("  - GENERAL:        TRIG=GPIO19, ECHO=GPIO18");
+  Serial.println("───────────────────────────────────────────────────────────");
+  Serial.println("Configuración de niveles:");
+  Serial.print("  - Distancia al fondo: ");
+  Serial.print(DISTANCIA_FONDO);
+  Serial.println(" cm");
+  Serial.print("  - Umbral 'lleno': ");
+  Serial.print(UMBRAL_LLENO);
+  Serial.println(" cm");
+  Serial.print("  - Medición cada: ");
+  Serial.print(OBJETOS_PARA_MEDICION);
+  Serial.println(" objetos");
   Serial.println("═══════════════════════════════════════════════════════════");
   Serial.println("COMANDOS SOPORTADOS:");
   Serial.println("");
-  Serial.println("  PING          → Handshake (responde PONG)");
+  Serial.println("  PING              → Handshake (responde PONG)");
   Serial.println("");
-  Serial.println("  DEPOSITAR:CAT → Ejecutar secuencia completa de depósito");
-  Serial.println("                  CAT = PLASTICO, PAPEL, ALUMINIO, GENERAL");
-  Serial.println("                  Ejecuta: GIRO→INCL→depositar→RESET");
-  Serial.println("                  Responde: LISTO cuando termina");
+  Serial.println("  DEPOSITAR:G,I     → Ejecutar secuencia completa de depósito");
+  Serial.println("                      G = giro (-80 a 160)");
+  Serial.println("                      I = inclinación (-45 a 45)");
+  Serial.println("                      Ejemplo: DEPOSITAR:-30,-45");
+  Serial.println("                      Ejecuta: GIRO→INCL→depositar→RESET");
+  Serial.println("                      Responde: LISTO cuando termina");
+  Serial.println("                      Cada 10 objetos mide niveles automáticamente");
+  Serial.println("");
+  Serial.println("  Categorías predefinidas:");
+  Serial.println("    PLASTICO:      DEPOSITAR:-30,-45");
+  Serial.println("    PAPEL/CARTON:  DEPOSITAR:-30,45");
+  Serial.println("    ALUMINIO/METAL:DEPOSITAR:59,-45");
+  Serial.println("    GENERAL:       DEPOSITAR:59,45");
   Serial.println("");
   Serial.println("  GIRO:XXX      → Mover servo 13 a posición XXX (-80 a 160)");
   Serial.println("                  Ejemplo: GIRO:90 o GIRO:-45");
@@ -65,6 +149,11 @@ void setup() {
   Serial.println("                  Ejemplo: INCL:45 o INCL:-45");
   Serial.println("");
   Serial.println("  RESET         → Volver a posición inicial");
+  Serial.println("");
+  Serial.println("  MEDIR         → Forzar medición de niveles (4 sensores)");
+  Serial.println("                  Responde: NIVELES:P,PP,A,G");
+  Serial.println("");
+  Serial.println("  CONTADOR      → Ver contador actual de objetos");
   Serial.println("═══════════════════════════════════════════════════════════");
 
   // Inicializar Bluetooth
@@ -114,42 +203,92 @@ void procesarComando(String comando) {
     return;
   }
 
-  // DEPOSITAR:CATEGORIA - Secuencia completa de depósito
+  // DEPOSITAR:GIRO,INCLINACION - Secuencia completa de depósito
+  // Formato: DEPOSITAR:-30,-45 (valores numéricos directos)
   // Responde LISTO cuando termina (comunicación bidireccional precisa)
   if (comando.startsWith("DEPOSITAR:")) {
-    String categoria = comando.substring(10);
-    categoria.toUpperCase();
+    String datos = comando.substring(10);
 
     Serial.println("═══════════════════════════════════════");
-    Serial.print("🎯 DEPOSITAR: ");
-    Serial.println(categoria);
+    Serial.print("🎯 DEPOSITAR recibido: ");
+    Serial.println(datos);
     Serial.println("═══════════════════════════════════════");
 
-    // Determinar movimientos según categoría
+    // Parsear valores GIRO,INCLINACION del comando
     int giro = 59;       // Default: General
     int inclinacion = 45;
 
-    if (categoria.indexOf("PLASTICO") >= 0 || categoria.indexOf("PLASTIC") >= 0) {
-      // PLÁSTICO: Giro -30°, Incl -45°
-      giro = -30;
-      inclinacion = -45;
-      Serial.println("📦 Categoría: PLÁSTICO");
-    } else if (categoria.indexOf("PAPEL") >= 0 || categoria.indexOf("CARTON") >= 0) {
-      // PAPEL/CARTÓN: Giro -30°, Incl +45°
-      giro = -30;
-      inclinacion = 45;
-      Serial.println("📄 Categoría: PAPEL/CARTÓN");
-    } else if (categoria.indexOf("ALUMINIO") >= 0 || categoria.indexOf("METAL") >= 0) {
-      // ALUMINIO/METAL: Giro 59°, Incl -45°
-      giro = 59;
-      inclinacion = -45;
-      Serial.println("🥫 Categoría: ALUMINIO/METAL");
+    // Buscar la coma que separa giro e inclinación
+    int comaIndex = datos.indexOf(',');
+
+    if (comaIndex > 0) {
+      // Formato nuevo: DEPOSITAR:GIRO,INCLINACION (ej: DEPOSITAR:-30,-45)
+      String giroStr = datos.substring(0, comaIndex);
+      String inclStr = datos.substring(comaIndex + 1);
+
+      giro = giroStr.toInt();
+      inclinacion = inclStr.toInt();
+
+      Serial.println("📊 Valores parseados directamente:");
+      Serial.print("   Giro: ");
+      Serial.print(giro);
+      Serial.println("°");
+      Serial.print("   Inclinación: ");
+      Serial.print(inclinacion);
+      Serial.println("°");
+
+      // Identificar categoría para el log
+      if (giro == -30 && inclinacion == -45) {
+        Serial.println("📦 Categoría: PLÁSTICO");
+      } else if (giro == -30 && inclinacion == 45) {
+        Serial.println("📄 Categoría: PAPEL/CARTÓN");
+      } else if (giro == 59 && inclinacion == -45) {
+        Serial.println("🥫 Categoría: ALUMINIO/METAL");
+      } else if (giro == 59 && inclinacion == 45) {
+        Serial.println("🗑️ Categoría: GENERAL");
+      } else {
+        Serial.println("⚙️ Categoría: PERSONALIZADA");
+      }
+
     } else {
-      // GENERAL/BASURA: Giro 59°, Incl +45°
-      giro = 59;
-      inclinacion = 45;
-      Serial.println("🗑️ Categoría: GENERAL");
+      // Formato antiguo: DEPOSITAR:CATEGORIA (compatibilidad hacia atrás)
+      String categoria = datos;
+      categoria.toUpperCase();
+
+      Serial.println("📊 Formato antiguo (por nombre):");
+
+      if (categoria.indexOf("PLASTICO") >= 0 || categoria.indexOf("PLASTIC") >= 0) {
+        giro = -30;
+        inclinacion = -45;
+        Serial.println("📦 Categoría: PLÁSTICO");
+      } else if (categoria.indexOf("PAPEL") >= 0 || categoria.indexOf("CARTON") >= 0) {
+        giro = -30;
+        inclinacion = 45;
+        Serial.println("📄 Categoría: PAPEL/CARTÓN");
+      } else if (categoria.indexOf("ALUMINIO") >= 0 || categoria.indexOf("METAL") >= 0) {
+        giro = 59;
+        inclinacion = -45;
+        Serial.println("🥫 Categoría: ALUMINIO/METAL");
+      } else {
+        giro = 59;
+        inclinacion = 45;
+        Serial.println("🗑️ Categoría: GENERAL");
+      }
     }
+
+    // Validar rangos
+    if (giro < -80) giro = -80;
+    if (giro > 160) giro = 160;
+    if (inclinacion < -45) inclinacion = -45;
+    if (inclinacion > 45) inclinacion = 45;
+
+    Serial.println("───────────────────────────────────────");
+    Serial.print("🎯 Ejecutando: GIRO=");
+    Serial.print(giro);
+    Serial.print("°, INCL=");
+    Serial.print(inclinacion);
+    Serial.println("°");
+    Serial.println("───────────────────────────────────────");
 
     // ═══════════════════════════════════════
     // EJECUTAR SECUENCIA COMPLETA
@@ -182,6 +321,24 @@ void procesarComando(String comando) {
     Serial.println("📍 Paso 5/5: Volviendo a posición inicial...");
     moverGiro(-80);
     delay(500);
+
+    // ═══════════════════════════════════════
+    // INCREMENTAR CONTADOR DE OBJETOS
+    // ═══════════════════════════════════════
+    contadorObjetos++;
+    Serial.print("📊 Contador de objetos: ");
+    Serial.print(contadorObjetos);
+    Serial.print("/");
+    Serial.println(OBJETOS_PARA_MEDICION);
+
+    // ═══════════════════════════════════════
+    // VERIFICAR SI TOCA MEDIR NIVELES
+    // ═══════════════════════════════════════
+    if (contadorObjetos >= OBJETOS_PARA_MEDICION) {
+      Serial.println("\n🔔 ¡10 objetos depositados! Midiendo niveles...");
+      medirYEnviarNiveles();
+      contadorObjetos = 0;  // Resetear contador
+    }
 
     // ═══════════════════════════════════════
     // SECUENCIA COMPLETADA - ENVIAR LISTO
@@ -310,9 +467,29 @@ void procesarComando(String comando) {
     return;
   }
 
+  // MEDIR - Forzar medición de niveles
+  if (comando == "MEDIR") {
+    Serial.println("📏 Forzando medición de niveles...");
+    medirYEnviarNiveles();
+    return;
+  }
+
+  // CONTADOR - Ver contador actual
+  if (comando == "CONTADOR") {
+    Serial.print("📊 Contador actual: ");
+    Serial.print(contadorObjetos);
+    Serial.print("/");
+    Serial.println(OBJETOS_PARA_MEDICION);
+
+    String respuesta = "CONTADOR:" + String(contadorObjetos);
+    SerialBT.println(respuesta);
+    SerialBT.flush();
+    return;
+  }
+
   // Comando no reconocido
   Serial.println("❌ Comando no reconocido");
-  Serial.println("   Comandos válidos: PING, GIRO:XXX, INCL:XXX, RESET");
+  Serial.println("   Comandos válidos: PING, DEPOSITAR:G,I, GIRO:XXX, INCL:XXX, RESET, MEDIR, CONTADOR");
   SerialBT.println("ERROR");
   SerialBT.flush();
 }
@@ -333,7 +510,7 @@ void mostrarPosicionActual() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// FUNCIONES AUXILIARES PARA MOVIMIENTO DE SERVOS
+// FUNCIONES AUXILIARES PARA MOVIMIENTO DE SERVOS (NO MODIFICAR)
 // ═══════════════════════════════════════════════════════════
 
 /**
@@ -377,4 +554,174 @@ void moverInclinacion(int valor) {
   servo12.write(pos12);
   servo14.write(pos14);
   posicionInclinacion = valor;
+}
+
+// ═══════════════════════════════════════════════════════════
+// FUNCIONES SENSORES ULTRASÓNICOS
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Medir distancia con un sensor ultrasónico HC-SR04
+ * @param trigPin: Pin TRIG del sensor
+ * @param echoPin: Pin ECHO del sensor
+ * @return: Distancia en centímetros
+ */
+float medirDistancia(int trigPin, int echoPin) {
+  // Asegurar que TRIG está en LOW
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+
+  // Enviar pulso de 10µs
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  // Leer duración del pulso ECHO (timeout de 30ms = ~5m máximo)
+  long duracion = pulseIn(echoPin, HIGH, 30000);
+
+  // Si no hay respuesta (timeout), retornar distancia máxima
+  if (duracion == 0) {
+    return DISTANCIA_FONDO;
+  }
+
+  // Calcular distancia: velocidad del sonido = 343 m/s = 0.0343 cm/µs
+  // Dividir entre 2 porque el sonido va y vuelve
+  float distancia = (duracion * 0.0343) / 2.0;
+
+  // Limitar a rango válido
+  if (distancia > DISTANCIA_FONDO) distancia = DISTANCIA_FONDO;
+  if (distancia < 2.0) distancia = 2.0;  // Mínimo del sensor HC-SR04
+
+  return distancia;
+}
+
+/**
+ * Medir todos los sensores y enviar resultados por Bluetooth
+ * Formato: NIVELES:XX.X,XX.X,XX.X,XX.X (Plástico,Papel,Aluminio,General)
+ * Si alguno está lleno: ALERTA_LLENO:CATEGORIA
+ */
+void medirYEnviarNiveles() {
+  Serial.println("\n═══════════════════════════════════════════════════════════");
+  Serial.println("           📏 MIDIENDO NIVELES DE BOTES");
+  Serial.println("═══════════════════════════════════════════════════════════");
+
+  // Medir cada sensor con pequeña pausa entre mediciones
+  nivelPlastico = medirDistancia(TRIG_PLASTICO, ECHO_PLASTICO);
+  delay(50);
+
+  nivelPapel = medirDistancia(TRIG_PAPEL, ECHO_PAPEL);
+  delay(50);
+
+  nivelAluminio = medirDistancia(TRIG_ALUMINIO, ECHO_ALUMINIO);
+  delay(50);
+
+  nivelGeneral = medirDistancia(TRIG_GENERAL, ECHO_GENERAL);
+
+  // Mostrar resultados en Serial
+  Serial.println("───────────────────────────────────────────────────────────");
+  Serial.println("  CATEGORIA      | DISTANCIA | LLENADO | ESTADO");
+  Serial.println("───────────────────────────────────────────────────────────");
+
+  mostrarNivelCategoria("PLASTICO", nivelPlastico);
+  mostrarNivelCategoria("PAPEL", nivelPapel);
+  mostrarNivelCategoria("ALUMINIO", nivelAluminio);
+  mostrarNivelCategoria("GENERAL", nivelGeneral);
+
+  Serial.println("───────────────────────────────────────────────────────────");
+
+  // Enviar niveles por Bluetooth
+  // Formato: NIVELES:P,PP,A,G (distancias en cm, 1 decimal)
+  String mensaje = "NIVELES:";
+  mensaje += String(nivelPlastico, 1) + ",";
+  mensaje += String(nivelPapel, 1) + ",";
+  mensaje += String(nivelAluminio, 1) + ",";
+  mensaje += String(nivelGeneral, 1);
+
+  SerialBT.println(mensaje);
+  SerialBT.flush();
+
+  Serial.print("📤 Enviado: ");
+  Serial.println(mensaje);
+
+  // Verificar si algún bote está lleno (≤ UMBRAL_LLENO cm)
+  bool hayAlerta = false;
+  String alertas = "";
+
+  if (nivelPlastico <= UMBRAL_LLENO) {
+    alertas += "PLASTICO,";
+    hayAlerta = true;
+  }
+  if (nivelPapel <= UMBRAL_LLENO) {
+    alertas += "PAPEL,";
+    hayAlerta = true;
+  }
+  if (nivelAluminio <= UMBRAL_LLENO) {
+    alertas += "ALUMINIO,";
+    hayAlerta = true;
+  }
+  if (nivelGeneral <= UMBRAL_LLENO) {
+    alertas += "GENERAL,";
+    hayAlerta = true;
+  }
+
+  // Enviar alertas si hay botes llenos
+  if (hayAlerta) {
+    // Quitar última coma
+    alertas = alertas.substring(0, alertas.length() - 1);
+
+    String mensajeAlerta = "ALERTA_LLENO:" + alertas;
+    SerialBT.println(mensajeAlerta);
+    SerialBT.flush();
+
+    Serial.println("═══════════════════════════════════════════════════════════");
+    Serial.println("⚠️  ¡ALERTA! BOTES LLENOS DETECTADOS");
+    Serial.print("📤 Enviado: ");
+    Serial.println(mensajeAlerta);
+    Serial.println("═══════════════════════════════════════════════════════════");
+  }
+
+  Serial.println("");
+}
+
+/**
+ * Mostrar nivel de una categoría en formato tabla
+ */
+void mostrarNivelCategoria(String categoria, float distancia) {
+  // Calcular porcentaje de llenado
+  // distancia = 82.5 → 0% lleno (vacío)
+  // distancia = 25.0 → 100% lleno
+  float porcentaje = ((DISTANCIA_FONDO - distancia) / ESPACIO_UTIL) * 100.0;
+  if (porcentaje < 0) porcentaje = 0;
+  if (porcentaje > 100) porcentaje = 100;
+
+  // Determinar estado
+  String estado;
+  if (distancia <= UMBRAL_LLENO) {
+    estado = "!! LLENO!";
+  } else if (porcentaje >= 75) {
+    estado = "Casi lleno";
+  } else if (porcentaje >= 50) {
+    estado = "Medio";
+  } else if (porcentaje >= 25) {
+    estado = "Bajo";
+  } else {
+    estado = "Vacio";
+  }
+
+  // Formatear línea
+  Serial.print("  ");
+  Serial.print(categoria);
+  // Padding para alinear columnas
+  for (int i = categoria.length(); i < 14; i++) Serial.print(" ");
+  Serial.print("| ");
+  Serial.print(distancia, 1);
+  Serial.print(" cm");
+  if (distancia < 10) Serial.print(" ");
+  Serial.print("  | ");
+  Serial.print(porcentaje, 0);
+  Serial.print("%");
+  if (porcentaje < 10) Serial.print(" ");
+  if (porcentaje < 100) Serial.print(" ");
+  Serial.print("    | ");
+  Serial.println(estado);
 }

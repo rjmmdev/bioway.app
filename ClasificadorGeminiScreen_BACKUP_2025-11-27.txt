@@ -1,4 +1,4 @@
-package com.biowaymexico.ui.screens.bote_bioway
+package com.biowaymexico.ui.screens.bote_bioway.clasificador_gemini
 
 import android.Manifest
 import android.graphics.Bitmap
@@ -15,16 +15,15 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.BluetoothConnected
 import androidx.compose.material.icons.filled.BluetoothDisabled
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Crop
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberUpdatedState
@@ -36,7 +35,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -56,30 +54,36 @@ import com.biowaymexico.ui.theme.BioWayColors
 import com.biowaymexico.utils.BluetoothManager
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.min
 
-private const val TAG = "ClasificadorBoteYOLO"
-private const val TAG_FILTER = "PlateFilter"
+private const val TAG = "ClasificadorGemini"
+private const val TAG_FILTER = "PlateFilterGemini"
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CONFIGURACIÓN - Modifica la API Key aquí
+// ══════════════════════════════════════════════════════════════════════════════
+private const val GEMINI_API_KEY = "AIzaSyDbyZH75v5JfOOmDG77nlkZvZIRxRYlx3U"
+// ══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Filtro inteligente para ignorar el plato blanco del bote
+ * Filtro para ignorar el plato blanco del bote (versión Gemini)
+ * Solo detecta PRESENCIA de material, no clasifica
  *
- * Estrategia principal basada en CONFIANZA + FORMA + POSICIÓN:
+ * Lógica mejorada basada en CONFIANZA + FORMA + POSICIÓN:
  * - El plato tiene confianza BAJA (26-50%) porque es un falso positivo
- * - Los objetos reales tienen confianza ALTA (65%+)
+ * - Los objetos reales tienen confianza ALTA (60%+)
  * - El plato es CIRCULAR (aspect ratio cercano a 1)
  * - El plato está CENTRADO en el ROI
  * - Cuando hay 2+ plásticos, descartar el de mayor área (el plato)
- * - Cuando hay 1 plástico con baja confianza, probablemente es el plato
+ * - Cuando hay 1 plástico con baja confianza Y área grande, probablemente es el plato
  */
-object BackgroundPlateFilter {
+object MaterialPresenceFilter {
 
     // Umbral de confianza - MÁS ESTRICTO para evitar falsos positivos
     var minConfidenceThreshold = 0.60f  // Objetos reales tienen >60% confianza (antes 50%)
@@ -95,26 +99,26 @@ object BackgroundPlateFilter {
     private const val CENTER_THRESHOLD = 0.35f  // Distancia máxima del centro (normalizada)
 
     /**
-     * Filtra las detecciones, removiendo las que parecen ser el plato de fondo
+     * Filtra las detecciones para determinar si hay un material presente
+     * @return true si hay material válido presente, false si solo es el plato
      */
-    fun filterDetections(
+    fun hasMaterialPresent(
         detections: List<Detection>,
         roiWidth: Int,
         roiHeight: Int
-    ): List<Detection> {
+    ): Boolean {
         val roiArea = roiWidth.toFloat() * roiHeight.toFloat()
 
         Log.d(TAG_FILTER, "═══════════════════════════════════════")
-        Log.d(TAG_FILTER, "📊 Analizando ${detections.size} detecciones")
-        Log.d(TAG_FILTER, "   ROI: ${roiWidth}x${roiHeight} = ${roiArea.toInt()} px²")
+        Log.d(TAG_FILTER, "🔍 Verificando presencia de material...")
+        Log.d(TAG_FILTER, "   Detecciones: ${detections.size}")
 
         if (detections.isEmpty()) {
-            Log.d(TAG_FILTER, "   (sin detecciones)")
-            Log.d(TAG_FILTER, "═══════════════════════════════════════")
-            return emptyList()
+            Log.d(TAG_FILTER, "   ❌ Sin detecciones - plato vacío")
+            return false
         }
 
-        // Separar por tipo de material
+        // Separar plásticos de otros materiales
         val plasticDetections = detections.filter {
             it.className.lowercase().contains("plastic") ||
             it.className.lowercase().contains("plastico")
@@ -127,40 +131,39 @@ object BackgroundPlateFilter {
         Log.d(TAG_FILTER, "   🔹 Plásticos: ${plasticDetections.size}")
         Log.d(TAG_FILTER, "   🔹 Otros materiales: ${otherDetections.size}")
 
-        // Procesar plásticos con la lógica especial
-        val filteredPlastics = filterPlasticDetections(plasticDetections, roiArea, roiWidth, roiHeight)
-
-        // Otros materiales pasan sin filtro (no son el plato)
-        otherDetections.forEach { detection ->
-            val box = detection.boundingBox
-            val areaRatio = (box.width() * box.height()) / roiArea
-            Log.d(TAG_FILTER, "─────────────────────────────────────")
-            Log.d(TAG_FILTER, "🔍 ${detection.className} (${(detection.confidence * 100).toInt()}%)")
-            Log.d(TAG_FILTER, "   📊 Área: ${(areaRatio * 100).toInt()}% del ROI")
-            Log.d(TAG_FILTER, "   ✅ ACEPTADO: No es plástico")
+        // Si hay materiales que NO son plástico, hay material presente
+        if (otherDetections.isNotEmpty()) {
+            Log.d(TAG_FILTER, "   ✅ Material NO plástico detectado: ${otherDetections.first().className}")
+            return true
         }
 
-        val result = filteredPlastics + otherDetections
+        // Para plásticos, aplicar filtro del plato (lógica mejorada igual que YOLO)
+        if (plasticDetections.isNotEmpty()) {
+            val hasValidPlastic = filterPlasticDetections(plasticDetections, roiArea, roiWidth, roiHeight)
+            if (hasValidPlastic) {
+                Log.d(TAG_FILTER, "   ✅ Plástico válido detectado")
+                return true
+            }
+        }
 
-        Log.d(TAG_FILTER, "═══════════════════════════════════════")
-        Log.d(TAG_FILTER, "✅ Resultado: ${result.size}/${detections.size} detecciones válidas")
-        Log.d(TAG_FILTER, "═══════════════════════════════════════")
-
-        return result
+        Log.d(TAG_FILTER, "   ❌ Solo plato detectado (falso positivo)")
+        return false
     }
 
+    /**
+     * Filtra detecciones de plástico usando la misma lógica mejorada que YOLO
+     */
     private fun filterPlasticDetections(
         plastics: List<Detection>,
         roiArea: Float,
         roiWidth: Int,
         roiHeight: Int
-    ): List<Detection> {
-        if (plastics.isEmpty()) return emptyList()
+    ): Boolean {
+        if (plastics.isEmpty()) return false
 
         // Calcular área y métricas de cada detección
         data class PlasticWithMetrics(
             val detection: Detection,
-            val area: Float,
             val areaRatio: Float,
             val confidence: Float,
             val aspectRatio: Float,
@@ -188,30 +191,19 @@ object BackgroundPlateFilter {
             )
             val isCentered = distFromCenter < CENTER_THRESHOLD
 
-            PlasticWithMetrics(detection, area, areaRatio, detection.confidence, aspectRatio, isCentered, isCircular)
-        }.sortedByDescending { it.area }  // Ordenar por área (mayor primero)
+            PlasticWithMetrics(detection, areaRatio, detection.confidence, aspectRatio, isCentered, isCircular)
+        }.sortedByDescending { it.areaRatio }  // Ordenar por área (mayor primero)
 
         // Log de todas las detecciones de plástico
         plasticsWithMetrics.forEach { p ->
-            Log.d(TAG_FILTER, "─────────────────────────────────────")
-            Log.d(TAG_FILTER, "🔍 ${p.detection.className}")
-            Log.d(TAG_FILTER, "   🎯 Confianza: ${(p.confidence * 100).toInt()}%")
-            Log.d(TAG_FILTER, "   📐 Tamaño: ${p.detection.boundingBox.width().toInt()}x${p.detection.boundingBox.height().toInt()} px")
-            Log.d(TAG_FILTER, "   📊 Área: ${(p.areaRatio * 100).toInt()}% del ROI")
-            Log.d(TAG_FILTER, "   ⭕ Aspect ratio: ${String.format("%.2f", p.aspectRatio)} (circular=${p.isCircular})")
-            Log.d(TAG_FILTER, "   📍 Centrado: ${p.isCentered}")
+            Log.d(TAG_FILTER, "   📊 ${p.detection.className}: conf=${(p.confidence * 100).toInt()}%, área=${(p.areaRatio * 100).toInt()}%")
+            Log.d(TAG_FILTER, "      aspect=${String.format("%.2f", p.aspectRatio)} circular=${p.isCircular} centrado=${p.isCentered}")
         }
 
         return when {
             // CASO 1: Solo hay 1 plástico detectado
             plasticsWithMetrics.size == 1 -> {
                 val single = plasticsWithMetrics[0]
-
-                // CRITERIOS PARA FILTRAR COMO PLATO:
-                // 1. Confianza baja (<60%)
-                // 2. Área grande (>25% del ROI)
-                // 3. Forma circular (aspect ratio 0.7-1.3)
-                // 4. Centrado en ROI
 
                 val isLowConfidence = single.confidence < minConfidenceThreshold
                 val isLargeArea = single.areaRatio > suspiciousAreaThreshold
@@ -221,7 +213,7 @@ object BackgroundPlateFilter {
                     // Caso clásico: baja confianza + área grande
                     isLowConfidence && isLargeArea -> true
 
-                    // Caso adicional: área MUY grande (>40%) sin importar confianza + circular + centrado
+                    // Caso adicional: área MUY grande (>40%) + circular + centrado
                     single.areaRatio > 0.40f && single.isCircular && single.isCentered -> true
 
                     // Caso adicional: confianza muy baja (<45%) + circular + centrado
@@ -232,268 +224,115 @@ object BackgroundPlateFilter {
 
                 if (isProbablyPlate) {
                     Log.d(TAG_FILTER, "   🚫 FILTRADO COMO PLATO:")
-                    Log.d(TAG_FILTER, "      - Confianza: ${(single.confidence * 100).toInt()}% (umbral: ${(minConfidenceThreshold * 100).toInt()}%)")
-                    Log.d(TAG_FILTER, "      - Área: ${(single.areaRatio * 100).toInt()}% (umbral: ${(suspiciousAreaThreshold * 100).toInt()}%)")
-                    Log.d(TAG_FILTER, "      - Circular: ${single.isCircular}, Centrado: ${single.isCentered}")
-                    Log.d(TAG_FILTER, "   💡 Probablemente es el plato (falso positivo)")
-                    emptyList()
+                    Log.d(TAG_FILTER, "      conf=${(single.confidence * 100).toInt()}% área=${(single.areaRatio * 100).toInt()}% circular=${single.isCircular}")
+                    false
                 } else {
                     Log.d(TAG_FILTER, "   ✅ ACEPTADO: Confianza ${(single.confidence * 100).toInt()}% >= umbral ${(minConfidenceThreshold * 100).toInt()}%")
-                    listOf(single.detection)
+                    true
                 }
             }
 
-            // CASO 2: Hay 2+ plásticos - descartar el más grande (el plato)
+            // CASO 2: Hay 2+ plásticos - verificar si hay material real además del plato
             else -> {
                 val largest = plasticsWithMetrics[0]
-                val smaller = plasticsWithMetrics.drop(1)  // Todos excepto el más grande
+                val smaller = plasticsWithMetrics.drop(1)
 
-                Log.d(TAG_FILTER, "   🚫 FILTRADO: '${largest.detection.className}' - Mayor área (${(largest.areaRatio * 100).toInt()}%)")
-                Log.d(TAG_FILTER, "   💡 El plástico más grande es probablemente el plato")
+                Log.d(TAG_FILTER, "   🚫 Mayor área (${(largest.areaRatio * 100).toInt()}%) = plato")
 
-                // Filtrar también los otros plásticos con baja confianza
-                val validSmaller = smaller.filter { p ->
-                    val isValid = p.confidence >= minConfidenceThreshold
-                    if (isValid) {
-                        Log.d(TAG_FILTER, "   ✅ ACEPTADO: '${p.detection.className}' - Confianza ${(p.confidence * 100).toInt()}%, Área ${(p.areaRatio * 100).toInt()}%")
-                    } else {
-                        Log.d(TAG_FILTER, "   🚫 FILTRADO: '${p.detection.className}' - Confianza baja ${(p.confidence * 100).toInt()}%")
-                    }
-                    isValid
+                // Verificar si hay plásticos válidos (con buena confianza)
+                val validSmaller = smaller.filter { it.confidence >= minConfidenceThreshold }
+
+                if (validSmaller.isNotEmpty()) {
+                    Log.d(TAG_FILTER, "   ✅ Hay ${validSmaller.size} plástico(s) válido(s) = material real")
+                    true
+                } else {
+                    Log.d(TAG_FILTER, "   🚫 Plásticos adicionales tienen baja confianza, ignorando")
+                    false
                 }
-
-                validSmaller.map { it.detection }
             }
         }
     }
 
     /**
-     * Resetear el filtro (por compatibilidad)
+     * Obtiene la detección principal (para logging)
      */
-    fun reset() {
-        Log.d(TAG_FILTER, "🔄 Filtro reseteado")
-    }
-
-    /**
-     * Log del estado actual de la configuración
-     */
-    fun logConfiguration() {
-        Log.d(TAG_FILTER, "═══════════════════════════════════════")
-        Log.d(TAG_FILTER, "⚙️ CONFIGURACIÓN DEL FILTRO (v2)")
-        Log.d(TAG_FILTER, "   Estrategia: CONFIANZA + ÁREA + FORMA + POSICIÓN")
-        Log.d(TAG_FILTER, "   Umbral confianza: ${(minConfidenceThreshold*100).toInt()}%")
-        Log.d(TAG_FILTER, "   Umbral área sospechosa: ${(suspiciousAreaThreshold*100).toInt()}%")
-        Log.d(TAG_FILTER, "   Aspect ratio circular: $CIRCULAR_ASPECT_MIN - $CIRCULAR_ASPECT_MAX")
-        Log.d(TAG_FILTER, "   Umbral centrado: $CENTER_THRESHOLD")
-        Log.d(TAG_FILTER, "   Filtros:")
-        Log.d(TAG_FILTER, "      1. Confianza <${(minConfidenceThreshold*100).toInt()}% + área >${(suspiciousAreaThreshold*100).toInt()}%")
-        Log.d(TAG_FILTER, "      2. Área >40% + circular + centrado")
-        Log.d(TAG_FILTER, "      3. Confianza <45% + circular + centrado")
-        Log.d(TAG_FILTER, "═══════════════════════════════════════")
+    fun getPrimaryDetection(detections: List<Detection>): Detection? {
+        return detections.maxByOrNull { it.confidence }
     }
 }
 
 /**
- * Categorías de materiales para el bote BioWay
- * Mapea las 12 clases YOLO a 4 categorías físicas del bote
+ * Tracker de presencia estable para disparar clasificación Gemini
+ * Espera 2 segundos de detección consistente antes de enviar a Gemini
+ * (para ahorrar tokens de API)
  */
-enum class MaterialCategory(
-    val displayName: String,
-    val emoji: String,
-    val giro: Int,
-    val inclinacion: Int,
-    val color: Long  // Color en formato Long para usar con Color()
-) {
-    PLASTICO(
-        displayName = "Plástico",
-        emoji = "♻️",
-        giro = -30,
-        inclinacion = -45,
-        color = 0xFF2196F3  // Azul
-    ),
-    PAPEL_CARTON(
-        displayName = "Papel/Cartón",
-        emoji = "📄",
-        giro = -30,
-        inclinacion = 45,
-        color = 0xFF4CAF50  // Verde
-    ),
-    ALUMINIO_METAL(
-        displayName = "Aluminio/Metal",
-        emoji = "🥫",
-        giro = 59,
-        inclinacion = -45,
-        color = 0xFF9C27B0  // Morado
-    ),
-    GENERAL(
-        displayName = "General",
-        emoji = "🗑️",
-        giro = 59,
-        inclinacion = 45,
-        color = 0xFFFF9800  // Naranja
-    );
-
-    companion object {
-        private const val TAG_CAT = "MaterialCategory"
-
-        /**
-         * Clasifica una detección YOLO en una de las 4 categorías
-         */
-        fun fromYoloClass(className: String): MaterialCategory {
-            val lowerName = className.lowercase()
-
-            return when {
-                // PLÁSTICO: todos los tipos de plástico
-                lowerName.contains("plastic") -> {
-                    Log.d(TAG_CAT, "🔵 '$className' → PLÁSTICO")
-                    PLASTICO
-                }
-
-                // PAPEL/CARTÓN
-                lowerName == "paper" || lowerName == "cardboard" ||
-                lowerName.contains("papel") || lowerName.contains("carton") -> {
-                    Log.d(TAG_CAT, "🟢 '$className' → PAPEL/CARTÓN")
-                    PAPEL_CARTON
-                }
-
-                // ALUMINIO/METAL (incluye vidrio para reciclables)
-                lowerName == "metal" || lowerName == "glass" ||
-                lowerName.contains("aluminio") || lowerName.contains("vidrio") -> {
-                    Log.d(TAG_CAT, "🟣 '$className' → ALUMINIO/METAL")
-                    ALUMINIO_METAL
-                }
-
-                // GENERAL: biological, trash, y todo lo demás
-                else -> {
-                    Log.d(TAG_CAT, "🟠 '$className' → GENERAL")
-                    GENERAL
-                }
-            }
-        }
-    }
-}
-
-/**
- * Tracker de estabilidad de detección
- * Verifica que el mismo material se detecte consistentemente durante N segundos
- * Y que aparezca en al menos M frames consecutivos
- */
-object DetectionStabilityTracker {
-    private const val TAG_STAB = "StabilityTracker"
+object PresenceStabilityTracker {
+    private const val TAG_STAB = "PresenceStability"
     private const val STABILITY_DURATION_MS = 3000L  // 3 segundos
-    private const val MIN_CONSECUTIVE_FRAMES = 5     // Mínimo 5 frames consecutivos
 
-    private var currentCategory: MaterialCategory? = null
-    private var categoryStartTime: Long = 0L
+    private var presenceStartTime: Long = 0L
+    private var hasPresence = false
     private var isStable = false
-    private var consecutiveFrames = 0               // Contador de frames consecutivos
-    private var lastDetectionTime: Long = 0L        // Para detectar gaps
 
     /**
-     * Actualiza el tracker con la detección actual
-     * @return MaterialCategory si está estable por 2 segundos Y al menos 5 frames consecutivos
+     * Actualiza el tracker con el estado de presencia actual
+     * @return true si la presencia es estable por 1.5 segundos
      */
-    fun update(detection: Detection?): MaterialCategory? {
+    fun update(hasMaterial: Boolean): Boolean {
         val now = System.currentTimeMillis()
 
-        if (detection == null) {
-            // Sin detección - resetear
-            if (currentCategory != null) {
-                Log.d(TAG_STAB, "❌ Detección perdida, reseteando...")
+        if (!hasMaterial) {
+            if (hasPresence) {
+                Log.d(TAG_STAB, "❌ Material perdido, reseteando...")
             }
             reset()
-            return null
+            return false
         }
 
-        val newCategory = MaterialCategory.fromYoloClass(detection.className)
-
-        // Verificar si hay un gap en detecciones (más de 500ms sin detección)
-        val hasGap = lastDetectionTime > 0 && (now - lastDetectionTime) > 500
-        lastDetectionTime = now
-
-        if (newCategory != currentCategory || hasGap) {
-            // Cambió la categoría o hubo un gap - reiniciar contador
-            if (hasGap && newCategory == currentCategory) {
-                Log.d(TAG_STAB, "⚠️ Gap detectado (${now - lastDetectionTime}ms), reiniciando...")
-            } else {
-                Log.d(TAG_STAB, "🔄 Cambio de categoría: ${currentCategory?.displayName ?: "ninguna"} → ${newCategory.displayName}")
-            }
-            currentCategory = newCategory
-            categoryStartTime = now
-            consecutiveFrames = 1
+        if (!hasPresence) {
+            // Primera detección de material
+            Log.d(TAG_STAB, "🔄 Material detectado, iniciando contador...")
+            hasPresence = true
+            presenceStartTime = now
             isStable = false
-            return null
+            return false
         }
 
-        // Misma categoría - incrementar contador de frames
-        consecutiveFrames++
-
-        // Verificar tiempo y frames consecutivos
-        val elapsedTime = now - categoryStartTime
+        val elapsedTime = now - presenceStartTime
         val remainingTime = STABILITY_DURATION_MS - elapsedTime
-        val hasEnoughFrames = consecutiveFrames >= MIN_CONSECUTIVE_FRAMES
 
-        if (elapsedTime >= STABILITY_DURATION_MS && hasEnoughFrames && !isStable) {
-            // ¡Estable por 2 segundos Y suficientes frames!
+        if (elapsedTime >= STABILITY_DURATION_MS && !isStable) {
             isStable = true
-            Log.d(TAG_STAB, "✅ ¡ESTABLE! ${newCategory.displayName}")
-            Log.d(TAG_STAB, "   Tiempo: ${elapsedTime}ms, Frames: $consecutiveFrames")
-            return newCategory
+            Log.d(TAG_STAB, "✅ ¡PRESENCIA ESTABLE! (${elapsedTime}ms)")
+            return true
         }
 
         if (!isStable && remainingTime > 0) {
-            Log.d(TAG_STAB, "⏳ ${newCategory.displayName}: ${String.format("%.1f", remainingTime/1000.0)}s, frames: $consecutiveFrames/$MIN_CONSECUTIVE_FRAMES")
+            Log.d(TAG_STAB, "⏳ Esperando: ${remainingTime/1000.0}s restantes...")
         }
 
-        return null
+        return false
     }
 
-    /**
-     * Obtiene el progreso actual (0.0 a 1.0)
-     */
     fun getProgress(): Float {
-        if (currentCategory == null) return 0f
-        val elapsed = System.currentTimeMillis() - categoryStartTime
+        if (!hasPresence) return 0f
+        val elapsed = System.currentTimeMillis() - presenceStartTime
         return (elapsed.toFloat() / STABILITY_DURATION_MS).coerceIn(0f, 1f)
     }
 
-    /**
-     * Obtiene la categoría actual siendo rastreada
-     */
-    fun getCurrentCategory(): MaterialCategory? = currentCategory
-
-    /**
-     * Verifica si ya se alcanzó estabilidad
-     */
     fun isCurrentlyStable(): Boolean = isStable
 
-    /**
-     * Resetea el tracker (después de depositar o al perder detección)
-     */
     fun reset() {
-        currentCategory = null
-        categoryStartTime = 0L
+        hasPresence = false
+        presenceStartTime = 0L
         isStable = false
-        consecutiveFrames = 0
-        lastDetectionTime = 0L
-    }
-
-    /**
-     * Resetea solo el estado de estabilidad (para permitir nuevo depósito)
-     */
-    fun resetStability() {
-        isStable = false
-        categoryStartTime = System.currentTimeMillis()
-        consecutiveFrames = 0
     }
 }
 
 /**
- * Representa la region de interes (ROI) para el recorte
- * Valores normalizados de 0 a 1
- * Siempre mantiene forma rectangular uniforme
+ * ROI para el recorte de imagen
  */
-data class ROIRect(
+data class ROIRectGemini(
     val left: Float = 0.15f,
     val top: Float = 0.15f,
     val right: Float = 0.85f,
@@ -506,63 +345,75 @@ data class ROIRect(
 }
 
 /**
- * Estados de la pantalla del clasificador YOLO
+ * Estados de la pantalla
  */
-private enum class YoloScreenState {
+private enum class GeminiScreenState {
     PERMISSION_REQUEST,
     ROI_CONFIGURATION,
     DETECTION_RUNNING
 }
 
 /**
- * Pantalla de Clasificador IA v2 para Bote BioWay
- * Flujo por pasos:
- * 1. Configurar ROI
- * 2. Iniciar deteccion con ROI fijo
+ * Estados del proceso de clasificación
+ */
+private enum class ClassificationState {
+    IDLE,                    // Esperando detección
+    DETECTING_PRESENCE,      // YOLO/FrameChange detectando presencia
+    PRESENCE_STABLE,         // Presencia confirmada, listo para capturar
+    CAPTURING_IMAGE,         // Capturando imagen
+    CLASSIFYING_GEMINI,      // Enviando a Gemini
+    CLASSIFICATION_READY,    // Clasificación lista
+    DEPOSITING,              // Depositando material
+    DEPOSIT_COMPLETE         // Depósito completado
+}
+
+/**
+ * Fuente de la detección
+ */
+private enum class DetectionSource {
+    NONE,
+    YOLO,           // YOLO reconoció el objeto
+    FRAME_CHANGE    // Cambio de frame (objeto no reconocido por YOLO)
+}
+
+/**
+ * Pantalla de Clasificador IA con Gemini
+ * Flujo: YOLO detecta presencia → Captura imagen → Gemini clasifica → Depósito
  */
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun ClasificadorBoteYOLOScreen(
+fun ClasificadorGeminiScreen(
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Estado de permisos
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
-    // Estado de la pantalla
     var screenState by remember {
         mutableStateOf(
             if (cameraPermissionState.status.isGranted)
-                YoloScreenState.ROI_CONFIGURATION
+                GeminiScreenState.ROI_CONFIGURATION
             else
-                YoloScreenState.PERMISSION_REQUEST
+                GeminiScreenState.PERMISSION_REQUEST
         )
     }
 
-    // Estado del ROI
-    var roiRect by remember { mutableStateOf(ROIRect()) }
-
-    // Dimensiones de la imagen de camara
+    var roiRect by remember { mutableStateOf(ROIRectGemini()) }
     var cameraImageSize by remember { mutableStateOf<Pair<Int, Int>?>(null) }
 
-    // Actualizar estado cuando cambie el permiso
     LaunchedEffect(cameraPermissionState.status.isGranted) {
-        if (cameraPermissionState.status.isGranted && screenState == YoloScreenState.PERMISSION_REQUEST) {
-            screenState = YoloScreenState.ROI_CONFIGURATION
+        if (cameraPermissionState.status.isGranted && screenState == GeminiScreenState.PERMISSION_REQUEST) {
+            screenState = GeminiScreenState.ROI_CONFIGURATION
         }
     }
 
-    // Manejar boton de retroceso del sistema
     BackHandler {
         when (screenState) {
-            YoloScreenState.DETECTION_RUNNING -> {
-                // Desde deteccion, volver a configuracion de ROI
-                screenState = YoloScreenState.ROI_CONFIGURATION
+            GeminiScreenState.DETECTION_RUNNING -> {
+                screenState = GeminiScreenState.ROI_CONFIGURATION
             }
             else -> {
-                // Desde configuracion o permisos, salir de la pantalla
                 onNavigateBack()
             }
         }
@@ -577,15 +428,15 @@ fun ClasificadorBoteYOLOScreen(
                 .padding(paddingValues)
         ) {
             when (screenState) {
-                YoloScreenState.PERMISSION_REQUEST -> {
-                    PermissionRequest(
+                GeminiScreenState.PERMISSION_REQUEST -> {
+                    PermissionRequestGemini(
                         onRequestPermission = { cameraPermissionState.launchPermissionRequest() },
                         onNavigateBack = onNavigateBack
                     )
                 }
 
-                YoloScreenState.ROI_CONFIGURATION -> {
-                    ROIConfigurationScreen(
+                GeminiScreenState.ROI_CONFIGURATION -> {
+                    ROIConfigurationScreenGemini(
                         lifecycleOwner = lifecycleOwner,
                         roiRect = roiRect,
                         onROIChange = { roiRect = it },
@@ -593,19 +444,18 @@ fun ClasificadorBoteYOLOScreen(
                         cameraImageSize = cameraImageSize,
                         onNavigateBack = onNavigateBack,
                         onConfirmROI = {
-                            screenState = YoloScreenState.DETECTION_RUNNING
+                            screenState = GeminiScreenState.DETECTION_RUNNING
                         }
                     )
                 }
 
-                YoloScreenState.DETECTION_RUNNING -> {
-                    DetectionScreen(
+                GeminiScreenState.DETECTION_RUNNING -> {
+                    DetectionScreenGemini(
                         lifecycleOwner = lifecycleOwner,
                         roiRect = roiRect,
                         cameraImageSize = cameraImageSize,
                         onNavigateBack = {
-                            // Volver a configuracion de ROI
-                            screenState = YoloScreenState.ROI_CONFIGURATION
+                            screenState = GeminiScreenState.ROI_CONFIGURATION
                         },
                         onExit = onNavigateBack
                     )
@@ -615,28 +465,28 @@ fun ClasificadorBoteYOLOScreen(
     }
 }
 
-// ==================== PANTALLA DE CONFIGURACION DE ROI ====================
+// ══════════════════════════════════════════════════════════════════════════════
+// PANTALLA DE CONFIGURACIÓN DE ROI
+// ══════════════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun ROIConfigurationScreen(
+private fun ROIConfigurationScreenGemini(
     lifecycleOwner: LifecycleOwner,
-    roiRect: ROIRect,
-    onROIChange: (ROIRect) -> Unit,
+    roiRect: ROIRectGemini,
+    onROIChange: (ROIRectGemini) -> Unit,
     onCameraImageSize: (Int, Int) -> Unit,
     cameraImageSize: Pair<Int, Int>?,
     onNavigateBack: () -> Unit,
     onConfirmROI: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        // Preview de camara (sin modelo)
-        CameraPreviewOnly(
+        CameraPreviewOnlyGemini(
             lifecycleOwner = lifecycleOwner,
             onCameraImageSize = onCameraImageSize
         )
 
-        // Overlay para configurar ROI
         cameraImageSize?.let { (imgWidth, imgHeight) ->
-            ROIConfigurationOverlay(
+            ROIConfigurationOverlayGemini(
                 imageWidth = imgWidth,
                 imageHeight = imgHeight,
                 roiRect = roiRect,
@@ -645,9 +495,7 @@ private fun ROIConfigurationScreen(
             )
         }
 
-        // Header
         Column(modifier = Modifier.fillMaxSize()) {
-            // Barra superior
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -669,35 +517,34 @@ private fun ROIConfigurationScreen(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Paso 1: Configurar Area",
+                        text = "Paso 1: Configurar Área",
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Ajusta el area de deteccion",
+                        text = "Clasificador YOLO + Gemini AI",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.7f)
+                        color = Color(0xFF9C7BFF)  // Morado para indicar Gemini
                     )
                 }
 
                 Icon(
-                    imageVector = Icons.Default.Crop,
+                    imageVector = Icons.Default.Psychology,
                     contentDescription = null,
-                    tint = BioWayColors.BrandGreen,
+                    tint = Color(0xFF9C7BFF),
                     modifier = Modifier.size(28.dp)
                 )
             }
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Boton inferior
             Button(
                 onClick = onConfirmROI,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = BioWayColors.BrandGreen),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9C7BFF)),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(
@@ -707,7 +554,7 @@ private fun ROIConfigurationScreen(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Iniciar Clasificacion",
+                    text = "Iniciar Clasificación",
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -716,7 +563,7 @@ private fun ROIConfigurationScreen(
 }
 
 @Composable
-private fun CameraPreviewOnly(
+private fun CameraPreviewOnlyGemini(
     lifecycleOwner: LifecycleOwner,
     onCameraImageSize: (Int, Int) -> Unit
 ) {
@@ -724,14 +571,13 @@ private fun CameraPreviewOnly(
     var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     var hasReportedSize by remember { mutableStateOf(false) }
 
-    // Limpiar camara al salir
     DisposableEffect(Unit) {
         onDispose {
             try {
                 cameraProvider?.unbindAll()
-                Log.d(TAG, "CameraPreviewOnly: Camara liberada")
+                Log.d(TAG, "CameraPreviewOnlyGemini: Cámara liberada")
             } catch (e: Exception) {
-                Log.e(TAG, "Error liberando camara: ${e.message}")
+                Log.e(TAG, "Error liberando cámara: ${e.message}")
             }
         }
     }
@@ -755,7 +601,6 @@ private fun CameraPreviewOnly(
                             it.setSurfaceProvider(surfaceProvider)
                         }
 
-                        // ImageAnalysis solo para obtener dimensiones
                         val imageAnalysis = ImageAnalysis.Builder()
                             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                             .build()
@@ -787,7 +632,7 @@ private fun CameraPreviewOnly(
                             imageAnalysis
                         )
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error iniciando camara: ${e.message}", e)
+                        Log.e(TAG, "Error iniciando cámara: ${e.message}", e)
                     }
                 }, ContextCompat.getMainExecutor(ctx))
             }
@@ -797,18 +642,17 @@ private fun CameraPreviewOnly(
 }
 
 @Composable
-private fun ROIConfigurationOverlay(
+private fun ROIConfigurationOverlayGemini(
     imageWidth: Int,
     imageHeight: Int,
-    roiRect: ROIRect,
-    onROIChange: (ROIRect) -> Unit,
+    roiRect: ROIRectGemini,
+    onROIChange: (ROIRectGemini) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var canvasSize by remember { mutableStateOf(Size.Zero) }
     var draggedHandle by remember { mutableStateOf<String?>(null) }
     var isDraggingCenter by remember { mutableStateOf(false) }
 
-    // Mantener referencia actualizada al ROI actual
     val currentRoiRect by rememberUpdatedState(roiRect)
     val currentOnROIChange by rememberUpdatedState(onROIChange)
 
@@ -845,7 +689,6 @@ private fun ROIConfigurationOverlay(
                         val roiRight = roi.right * imageWidth * scale + offsetX
                         val roiBottom = roi.bottom * imageHeight * scale + offsetY
 
-                        // Solo esquinas para mantener forma rectangular
                         val handles = listOf(
                             "topLeft" to Offset(roiLeft, roiTop),
                             "topRight" to Offset(roiRight, roiTop),
@@ -881,26 +724,24 @@ private fun ROIConfigurationOverlay(
                         val deltaX = dragAmount.x / (imageWidth * scale)
                         val deltaY = dragAmount.y / (imageHeight * scale)
 
-                        val minSize = 0.10f // Minimo 10% del area
+                        val minSize = 0.10f
                         val roi = currentRoiRect
 
                         if (isDraggingCenter) {
-                            // Mover todo el ROI manteniendo dimensiones
                             val newLeft = (roi.left + deltaX).coerceIn(0f, 1f - roi.width)
                             val newTop = (roi.top + deltaY).coerceIn(0f, 1f - roi.height)
-                            currentOnROIChange(ROIRect(
+                            currentOnROIChange(ROIRectGemini(
                                 left = newLeft,
                                 top = newTop,
                                 right = newLeft + roi.width,
                                 bottom = newTop + roi.height
                             ))
                         } else {
-                            // Redimensionar libremente desde esquinas
                             when (draggedHandle) {
                                 "topLeft" -> {
                                     val newLeft = (roi.left + deltaX).coerceIn(0f, roi.right - minSize)
                                     val newTop = (roi.top + deltaY).coerceIn(0f, roi.bottom - minSize)
-                                    currentOnROIChange(ROIRect(
+                                    currentOnROIChange(ROIRectGemini(
                                         left = newLeft,
                                         top = newTop,
                                         right = roi.right,
@@ -910,7 +751,7 @@ private fun ROIConfigurationOverlay(
                                 "topRight" -> {
                                     val newRight = (roi.right + deltaX).coerceIn(roi.left + minSize, 1f)
                                     val newTop = (roi.top + deltaY).coerceIn(0f, roi.bottom - minSize)
-                                    currentOnROIChange(ROIRect(
+                                    currentOnROIChange(ROIRectGemini(
                                         left = roi.left,
                                         top = newTop,
                                         right = newRight,
@@ -920,7 +761,7 @@ private fun ROIConfigurationOverlay(
                                 "bottomLeft" -> {
                                     val newLeft = (roi.left + deltaX).coerceIn(0f, roi.right - minSize)
                                     val newBottom = (roi.bottom + deltaY).coerceIn(roi.top + minSize, 1f)
-                                    currentOnROIChange(ROIRect(
+                                    currentOnROIChange(ROIRectGemini(
                                         left = newLeft,
                                         top = roi.top,
                                         right = roi.right,
@@ -930,7 +771,7 @@ private fun ROIConfigurationOverlay(
                                 "bottomRight" -> {
                                     val newRight = (roi.right + deltaX).coerceIn(roi.left + minSize, 1f)
                                     val newBottom = (roi.bottom + deltaY).coerceIn(roi.top + minSize, 1f)
-                                    currentOnROIChange(ROIRect(
+                                    currentOnROIChange(ROIRectGemini(
                                         left = roi.left,
                                         top = roi.top,
                                         right = newRight,
@@ -969,55 +810,31 @@ private fun ROIConfigurationOverlay(
         val roiRight = roiRect.right * imageWidth * scale + offsetX
         val roiBottom = roiRect.bottom * imageHeight * scale + offsetY
 
-        // Area oscurecida fuera del ROI
         val dimColor = Color.Black.copy(alpha = 0.65f)
 
-        // Arriba
-        drawRect(
-            color = dimColor,
-            topLeft = Offset(offsetX, offsetY),
-            size = Size(imageWidth * scale, roiTop - offsetY)
-        )
-        // Abajo
-        drawRect(
-            color = dimColor,
-            topLeft = Offset(offsetX, roiBottom),
-            size = Size(imageWidth * scale, (offsetY + imageHeight * scale) - roiBottom)
-        )
-        // Izquierda
-        drawRect(
-            color = dimColor,
-            topLeft = Offset(offsetX, roiTop),
-            size = Size(roiLeft - offsetX, roiBottom - roiTop)
-        )
-        // Derecha
-        drawRect(
-            color = dimColor,
-            topLeft = Offset(roiRight, roiTop),
-            size = Size((offsetX + imageWidth * scale) - roiRight, roiBottom - roiTop)
-        )
+        drawRect(dimColor, Offset(offsetX, offsetY), Size(imageWidth * scale, roiTop - offsetY))
+        drawRect(dimColor, Offset(offsetX, roiBottom), Size(imageWidth * scale, (offsetY + imageHeight * scale) - roiBottom))
+        drawRect(dimColor, Offset(offsetX, roiTop), Size(roiLeft - offsetX, roiBottom - roiTop))
+        drawRect(dimColor, Offset(roiRight, roiTop), Size((offsetX + imageWidth * scale) - roiRight, roiBottom - roiTop))
 
-        // Borde del ROI
+        // Borde del ROI - Color morado para Gemini
+        val geminiColor = Color(0xFF9C7BFF)
         drawRect(
-            color = BioWayColors.BrandGreen,
+            color = geminiColor,
             topLeft = Offset(roiLeft, roiTop),
             size = Size(roiRight - roiLeft, roiBottom - roiTop),
             style = Stroke(width = 4f)
         )
 
-        // Lineas guia (tercios)
         val thirdWidth = (roiRight - roiLeft) / 3
         val thirdHeight = (roiBottom - roiTop) / 3
-        val guideColor = BioWayColors.BrandGreen.copy(alpha = 0.3f)
+        val guideColor = geminiColor.copy(alpha = 0.3f)
 
-        // Lineas verticales
         drawLine(guideColor, Offset(roiLeft + thirdWidth, roiTop), Offset(roiLeft + thirdWidth, roiBottom), strokeWidth = 1f)
         drawLine(guideColor, Offset(roiLeft + thirdWidth * 2, roiTop), Offset(roiLeft + thirdWidth * 2, roiBottom), strokeWidth = 1f)
-        // Lineas horizontales
         drawLine(guideColor, Offset(roiLeft, roiTop + thirdHeight), Offset(roiRight, roiTop + thirdHeight), strokeWidth = 1f)
         drawLine(guideColor, Offset(roiLeft, roiTop + thirdHeight * 2), Offset(roiRight, roiTop + thirdHeight * 2), strokeWidth = 1f)
 
-        // Handles en las esquinas
         val handleRadius = handleSizePx / 2
         val corners = listOf(
             Offset(roiLeft, roiTop),
@@ -1027,59 +844,87 @@ private fun ROIConfigurationOverlay(
         )
 
         corners.forEach { pos ->
-            // Circulo exterior
-            drawCircle(
-                color = BioWayColors.BrandGreen,
-                radius = handleRadius,
-                center = pos
-            )
-            // Circulo interior
-            drawCircle(
-                color = Color.White,
-                radius = handleRadius - 6f,
-                center = pos
-            )
+            drawCircle(color = geminiColor, radius = handleRadius, center = pos)
+            drawCircle(color = Color.White, radius = handleRadius - 6f, center = pos)
         }
     }
 }
 
-// ==================== PANTALLA DE DETECCION ====================
+// ══════════════════════════════════════════════════════════════════════════════
+// PANTALLA DE DETECCIÓN PRINCIPAL
+// ══════════════════════════════════════════════════════════════════════════════
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
-private fun DetectionScreen(
+private fun DetectionScreenGemini(
     lifecycleOwner: LifecycleOwner,
-    roiRect: ROIRect,
+    roiRect: ROIRectGemini,
     cameraImageSize: Pair<Int, Int>?,
     onNavigateBack: () -> Unit,
     onExit: () -> Unit
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
 
-    // Estado del detector
+    // Permisos de Bluetooth (Android 12+)
+    val bluetoothPermissions = rememberMultiplePermissionsState(
+        listOf(
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN
+        )
+    )
+
+    // Estado del detector YOLO
     var detector by remember { mutableStateOf<WasteDetector?>(null) }
     var isDetectorReady by remember { mutableStateOf(false) }
     var detectorError by remember { mutableStateOf<String?>(null) }
 
-    // Estado de detecciones
+    // Estado del clasificador Gemini
+    var geminiClassifier by remember { mutableStateOf<GeminiClassifier?>(null) }
+    var isGeminiReady by remember { mutableStateOf(false) }
+    var geminiError by remember { mutableStateOf<String?>(null) }
+
+    // Estado de detecciones YOLO
     var currentResult by remember { mutableStateOf<DetectionResult?>(null) }
 
-    // ═══════════════════════════════════════════════════════════════
-    // ESTADO BLUETOOTH / ESP32
-    // ═══════════════════════════════════════════════════════════════
-    val bluetoothManager = remember { BluetoothManager() }
+    // Estado Bluetooth/ESP32
+    val bluetoothManager = remember { BluetoothManager(context) }
     var bluetoothConectado by remember { mutableStateOf(false) }
     var estadoConexion by remember { mutableStateOf("Desconectado") }
     var conectando by remember { mutableStateOf(false) }
-    var triggerConexion by remember { mutableStateOf(0) }  // Trigger para iniciar conexion
+    var triggerConexion by remember { mutableStateOf(0) }
 
-    // Manejar conexion Bluetooth cuando se dispara el trigger
-    LaunchedEffect(triggerConexion) {
+    // Estado de clasificación
+    var classificationState by remember { mutableStateOf(ClassificationState.IDLE) }
+    var presenceProgress by remember { mutableStateOf(0f) }
+    var geminiResult by remember { mutableStateOf<GeminiClassificationResult?>(null) }
+    var depositStatus by remember { mutableStateOf("") }
+
+    // Imagen capturada para Gemini
+    var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
+
+    // Estado del FrameChangeDetector (fallback cuando YOLO no detecta)
+    var hasBaseline by remember { mutableStateOf(false) }
+    var detectionSource by remember { mutableStateOf(DetectionSource.NONE) }
+    var triggerCaptureBaseline by remember { mutableStateOf(0) }
+
+    // Trigger para captura de imagen
+    var triggerCapture by remember { mutableStateOf(0) }
+
+    // Manejar conexión Bluetooth - SOLO si los permisos están otorgados
+    LaunchedEffect(triggerConexion, bluetoothPermissions.allPermissionsGranted) {
         if (triggerConexion == 0) return@LaunchedEffect
         if (conectando) return@LaunchedEffect
 
+        // NO intentar conectar si no hay permisos
+        if (!bluetoothPermissions.allPermissionsGranted) {
+            Log.d(TAG, "⚠️ Esperando permisos de Bluetooth...")
+            estadoConexion = "Sin permisos"
+            return@LaunchedEffect
+        }
+
         conectando = true
         estadoConexion = "Conectando..."
+        Log.d(TAG, "🔌 Iniciando conexión con permisos otorgados...")
 
         val result = bluetoothManager.conectarConHandshake()
         result.fold(
@@ -1097,26 +942,61 @@ private fun DetectionScreen(
         conectando = false
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // ESTADO DE ESTABILIDAD Y DEPOSITO
-    // ═══════════════════════════════════════════════════════════════
-    var stabilityProgress by remember { mutableStateOf(0f) }
-    var currentCategory by remember { mutableStateOf<MaterialCategory?>(null) }
-    var isDepositing by remember { mutableStateOf(false) }
-    var depositStatus by remember { mutableStateOf("") }
-    var lastDepositCategory by remember { mutableStateOf<MaterialCategory?>(null) }
+    // Solicitar permisos de Bluetooth al inicio
+    LaunchedEffect(Unit) {
+        if (!bluetoothPermissions.allPermissionsGranted) {
+            bluetoothPermissions.launchMultiplePermissionRequest()
+        }
+    }
 
-    // Inicializar detector
+    // Reintentar conexión después de obtener permisos
+    LaunchedEffect(bluetoothPermissions.allPermissionsGranted) {
+        if (bluetoothPermissions.allPermissionsGranted && triggerConexion > 0 && !bluetoothConectado && !conectando) {
+            triggerConexion++
+        }
+    }
+
+    // Capturar baseline cuando se solicite
+    LaunchedEffect(triggerCaptureBaseline) {
+        if (triggerCaptureBaseline == 0) return@LaunchedEffect
+        if (capturedBitmap == null) {
+            Log.d(TAG, "⚠️ No hay imagen para baseline")
+            return@LaunchedEffect
+        }
+
+        Log.d(TAG, "📷 Capturando baseline del plato vacío...")
+        FrameChangeDetector.captureBaseline(capturedBitmap!!)
+        hasBaseline = FrameChangeDetector.hasValidBaseline()
+
+        if (hasBaseline) {
+            Log.d(TAG, "✅ Baseline capturado - listo para detectar objetos")
+        }
+    }
+
+    // Auto-capturar baseline cuando ESP32 se conecta (si no hay baseline)
+    LaunchedEffect(bluetoothConectado, isDetectorReady, isGeminiReady) {
+        if (bluetoothConectado && isDetectorReady && isGeminiReady && !hasBaseline) {
+            // Esperar un momento para que el frame se estabilice
+            delay(500)
+            if (capturedBitmap != null) {
+                Log.d(TAG, "📷 Auto-capturando baseline inicial...")
+                triggerCaptureBaseline++
+            }
+        }
+    }
+
+    // Inicializar YOLO y Gemini
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
             try {
-                Log.d(TAG, "Inicializando WasteDetector...")
+                // Inicializar YOLO (solo para detección de presencia)
+                Log.d(TAG, "═══════════════════════════════════════")
+                Log.d(TAG, "🔧 Inicializando sistema YOLO + Gemini...")
 
                 val labels = WasteDetector.loadLabels(
                     context,
                     "labels/waste_detector_labels.txt"
                 )
-                Log.d(TAG, "Etiquetas cargadas: ${labels.size}")
 
                 val newDetector = WasteDetector(
                     context = context,
@@ -1125,108 +1005,222 @@ private fun DetectionScreen(
                     useGpu = true
                 )
 
-                newDetector.confidenceThreshold = 0.25f
+                newDetector.confidenceThreshold = 0.20f  // Más sensible para detección
                 newDetector.iouThreshold = 0.4f
                 newDetector.numItemsThreshold = 30
 
                 detector = newDetector
                 isDetectorReady = true
-                Log.d(TAG, "WasteDetector inicializado correctamente")
+                Log.d(TAG, "✅ YOLO inicializado (modo presencia)")
 
-                // Resetear y configurar filtro del plato de fondo
-                BackgroundPlateFilter.reset()
-                BackgroundPlateFilter.logConfiguration()
+                // Inicializar Gemini
+                val classifier = GeminiClassifier(GEMINI_API_KEY)
+                if (classifier.initialize()) {
+                    geminiClassifier = classifier
+                    isGeminiReady = true
+                    Log.d(TAG, "✅ Gemini inicializado")
+                } else {
+                    geminiError = "Error inicializando Gemini"
+                }
 
-                // Resetear tracker de estabilidad
-                DetectionStabilityTracker.reset()
+                // Resetear trackers
+                PresenceStabilityTracker.reset()
+
+                Log.d(TAG, "═══════════════════════════════════════")
 
             } catch (e: Exception) {
-                Log.e(TAG, "Error inicializando detector: ${e.message}", e)
+                Log.e(TAG, "Error inicializando: ${e.message}", e)
                 detectorError = e.message
             }
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // LOGICA DE ESTABILIDAD Y AUTO-DEPOSITO
-    // ═══════════════════════════════════════════════════════════════
-    var stableCategoryToDeposit by remember { mutableStateOf<MaterialCategory?>(null) }
+    // Lógica de detección de presencia y clasificación Gemini
+    // IMPORTANTE: Solo clasifica si ESP32 está conectado para no desperdiciar tokens
+    // USA: YOLO (primario) OR FrameChangeDetector (fallback para objetos no reconocidos)
+    LaunchedEffect(currentResult, bluetoothConectado, capturedBitmap) {
+        // No procesar si ESP32 no está conectado
+        if (!bluetoothConectado) {
+            // Resetear si estábamos detectando
+            if (classificationState == ClassificationState.DETECTING_PRESENCE) {
+                classificationState = ClassificationState.IDLE
+                presenceProgress = 0f
+                detectionSource = DetectionSource.NONE
+                PresenceStabilityTracker.reset()
+            }
+            return@LaunchedEffect
+        }
 
-    // Actualizar tracker de estabilidad con cada resultado
-    LaunchedEffect(currentResult) {
-        // Solo procesar si no estamos depositando
-        if (isDepositing) {
-            Log.d(TAG, "⏸️ Detección pausada - depósito en progreso")
+        // No procesar si estamos en medio de clasificación/depósito
+        if (classificationState != ClassificationState.IDLE &&
+            classificationState != ClassificationState.DETECTING_PRESENCE) {
             return@LaunchedEffect
         }
 
         val detections = currentResult?.boxes ?: emptyList()
-        val primaryDetection = detections.maxByOrNull { it.confidence }
+        val roiWidth = currentResult?.imageWidth ?: 320
+        val roiHeight = currentResult?.imageHeight ?: 320
 
-        // Actualizar tracker de estabilidad
-        val stableCategory = DetectionStabilityTracker.update(primaryDetection)
+        // PASO 1: Verificar con YOLO (detección primaria)
+        val yoloDetected = MaterialPresenceFilter.hasMaterialPresent(
+            detections, roiWidth, roiHeight
+        )
 
-        // Actualizar UI
-        stabilityProgress = DetectionStabilityTracker.getProgress()
-        currentCategory = DetectionStabilityTracker.getCurrentCategory()
+        // PASO 2: Si YOLO no detectó, usar FrameChangeDetector (fallback)
+        val frameChangeDetected = if (!yoloDetected && hasBaseline && capturedBitmap != null) {
+            val frameResult = FrameChangeDetector.detectChange(capturedBitmap!!)
+            if (frameResult.hasChange) {
+                Log.d(TAG, "🔄 FALLBACK: Cambio detectado por FrameChangeDetector")
+                Log.d(TAG, "   ${frameResult.reason}")
+            }
+            frameResult.hasChange
+        } else {
+            false
+        }
 
-        // Si alcanzamos estabilidad y estamos conectados al ESP32, marcar para depositar
-        if (stableCategory != null && bluetoothConectado && !isDepositing) {
-            Log.d(TAG, "🎯 Disparando depósito para: ${stableCategory.displayName}")
-            stableCategoryToDeposit = stableCategory
+        // Combinar resultados: YOLO OR FrameChange
+        val hasMaterial = yoloDetected || frameChangeDetected
+
+        // Actualizar fuente de detección
+        if (hasMaterial) {
+            detectionSource = when {
+                yoloDetected -> DetectionSource.YOLO
+                frameChangeDetected -> DetectionSource.FRAME_CHANGE
+                else -> DetectionSource.NONE
+            }
+            classificationState = ClassificationState.DETECTING_PRESENCE
+        }
+
+        val isStable = PresenceStabilityTracker.update(hasMaterial)
+        presenceProgress = PresenceStabilityTracker.getProgress()
+
+        if (isStable && classificationState == ClassificationState.DETECTING_PRESENCE) {
+            val sourceText = when (detectionSource) {
+                DetectionSource.YOLO -> "YOLO"
+                DetectionSource.FRAME_CHANGE -> "FrameChange (objeto no reconocido)"
+                else -> "Desconocido"
+            }
+            Log.d(TAG, "🎯 Presencia estable por 2s (fuente: $sourceText) - disparando Gemini")
+            classificationState = ClassificationState.PRESENCE_STABLE
+            triggerCapture++
+        }
+
+        if (!hasMaterial && classificationState == ClassificationState.DETECTING_PRESENCE) {
+            // Material perdido durante la detección - resetear
+            Log.d(TAG, "❌ Material perdido durante detección - reseteando")
+            classificationState = ClassificationState.IDLE
+            geminiResult = null
+            presenceProgress = 0f
+            detectionSource = DetectionSource.NONE
+            PresenceStabilityTracker.reset()
         }
     }
 
-    // Ejecutar deposito cuando se detecta material estable
-    // PROTOCOLO v2: Envía DEPOSITAR:CATEGORIA y espera señal LISTO del ESP32
-    LaunchedEffect(stableCategoryToDeposit) {
-        val categoryToDeposit = stableCategoryToDeposit ?: return@LaunchedEffect
-        if (isDepositing) return@LaunchedEffect
+    // Capturar imagen y enviar a Gemini
+    LaunchedEffect(triggerCapture) {
+        if (triggerCapture == 0) return@LaunchedEffect
+        if (capturedBitmap == null) {
+            Log.e(TAG, "❌ No hay imagen capturada")
+            classificationState = ClassificationState.IDLE
+            PresenceStabilityTracker.reset()
+            return@LaunchedEffect
+        }
+        if (!isGeminiReady || geminiClassifier == null) {
+            Log.e(TAG, "❌ Gemini no está listo")
+            classificationState = ClassificationState.IDLE
+            PresenceStabilityTracker.reset()
+            return@LaunchedEffect
+        }
 
+        classificationState = ClassificationState.CAPTURING_IMAGE
         Log.d(TAG, "═══════════════════════════════════════")
-        Log.d(TAG, "🎯 MATERIAL ESTABLE: ${categoryToDeposit.displayName}")
-        Log.d(TAG, "   Giro: ${categoryToDeposit.giro}°")
-        Log.d(TAG, "   Inclinación: ${categoryToDeposit.inclinacion}°")
-        Log.d(TAG, "   Iniciando depósito con protocolo v2...")
-        Log.d(TAG, "═══════════════════════════════════════")
+        Log.d(TAG, "📷 Esperando 500ms para autofocus...")
 
-        isDepositing = true
-        depositStatus = "Depositando ${categoryToDeposit.displayName}..."
-        stableCategoryToDeposit = null  // Resetear trigger
+        // Delay para permitir que la cámara enfoque bien antes de enviar a Gemini
+        delay(500)
 
-        // PROTOCOLO v2: Enviar DEPOSITAR con GIRO e INCLINACIÓN y esperar LISTO
-        val result = bluetoothManager.depositarYEsperarListo(
-            categoria = categoryToDeposit.displayName,
-            giro = categoryToDeposit.giro,
-            inclinacion = categoryToDeposit.inclinacion
-        )
-        result.fold(
-            onSuccess = {
-                // ESP32 confirmó LISTO - depósito exitoso
-                depositStatus = "✓ ${categoryToDeposit.displayName} depositado"
-                lastDepositCategory = categoryToDeposit
-                Log.d(TAG, "✅ ESP32 confirmó LISTO - Depósito completado: ${categoryToDeposit.displayName}")
+        // Verificar que aún tenemos una imagen válida después del delay
+        if (capturedBitmap == null) {
+            Log.e(TAG, "❌ Imagen perdida durante el delay de enfoque")
+            classificationState = ClassificationState.IDLE
+            PresenceStabilityTracker.reset()
+            return@LaunchedEffect
+        }
 
-                // Mostrar confirmación brevemente
-                kotlinx.coroutines.delay(800)
-            },
-            onFailure = { error ->
-                depositStatus = "Error: ${error.message}"
-                Log.e(TAG, "❌ Error en depósito: ${error.message}")
+        classificationState = ClassificationState.CLASSIFYING_GEMINI
+        Log.d(TAG, "🤖 Enviando imagen a Gemini...")
 
-                // En caso de error, esperar un poco más para mostrar el mensaje
-                kotlinx.coroutines.delay(2000)
+        val result = geminiClassifier!!.classifyWaste(capturedBitmap!!)
+
+        if (result != null && result.category != MaterialCategoryGemini.NO_DETECTADO) {
+            geminiResult = result
+            classificationState = ClassificationState.CLASSIFICATION_READY
+            Log.d(TAG, "✅ Clasificación Gemini: ${result.category.displayName}")
+
+            // Proceder a depositar (ESP32 ya está conectado - verificado antes de llamar a Gemini)
+            classificationState = ClassificationState.DEPOSITING
+            depositStatus = "Depositando ${result.category.displayName}..."
+            Log.d(TAG, "   Giro: ${result.category.giro}°, Inclinación: ${result.category.inclinacion}°")
+
+            val depositResult = bluetoothManager.depositarYEsperarListo(
+                categoria = result.category.displayName,
+                giro = result.category.giro,
+                inclinacion = result.category.inclinacion
+            )
+            depositResult.fold(
+                onSuccess = {
+                    depositStatus = "✓ ${result.category.displayName} depositado"
+                    classificationState = ClassificationState.DEPOSIT_COMPLETE
+                    Log.d(TAG, "✅ Depósito completado - Señal LISTO recibida del ESP32")
+                    delay(1500)  // Mostrar mensaje de éxito
+                },
+                onFailure = { error ->
+                    depositStatus = "Error: ${error.message}"
+                    Log.e(TAG, "❌ Error en depósito: ${error.message}")
+                    delay(2000)
+                }
+            )
+
+            // Reset para nueva detección (después de recibir LISTO del ESP32)
+            Log.d(TAG, "🔄 Reiniciando para nueva detección...")
+            classificationState = ClassificationState.IDLE
+            depositStatus = ""
+            geminiResult = null
+            presenceProgress = 0f
+            PresenceStabilityTracker.reset()
+        } else {
+            // Gemini no pudo detectar el material
+            val reason = result?.reasoning ?: "Error de conexión"
+            Log.d(TAG, "═══════════════════════════════════════")
+            Log.d(TAG, "❌ GEMINI NO DETECTÓ MATERIAL")
+            Log.d(TAG, "   Razón: $reason")
+            Log.d(TAG, "   Respuesta raw: ${result?.rawResponse ?: "null"}")
+            Log.d(TAG, "═══════════════════════════════════════")
+
+            // Mostrar temporalmente el resultado NO_DETECTADO para feedback visual
+            if (result != null) {
+                geminiResult = result
+                classificationState = ClassificationState.CLASSIFICATION_READY
             }
-        )
 
-        // Resetear TODO para nueva detección
-        Log.d(TAG, "🔄 Reseteando estado para nueva detección...")
-        isDepositing = false
-        depositStatus = ""
-        currentCategory = null      // Resetear UI
-        stabilityProgress = 0f      // Resetear progreso
-        DetectionStabilityTracker.reset()
-        Log.d(TAG, "✅ Estado reseteado - Listo para nueva detección")
+            // Esperar un momento para que el usuario vea el mensaje
+            delay(2000)
+
+            // Resetear para intentar de nuevo
+            Log.d(TAG, "🔄 Reseteando para nueva detección...")
+            classificationState = ClassificationState.IDLE
+            geminiResult = null
+            presenceProgress = 0f
+            detectionSource = DetectionSource.NONE
+            PresenceStabilityTracker.reset()
+
+            // Recapturar baseline si hubo error de detección
+            if (hasBaseline && capturedBitmap != null) {
+                Log.d(TAG, "📷 Recapturando baseline...")
+                FrameChangeDetector.captureBaseline(capturedBitmap!!)
+            }
+        }
+
         Log.d(TAG, "═══════════════════════════════════════")
     }
 
@@ -1235,37 +1229,49 @@ private fun DetectionScreen(
         onDispose {
             detector?.close()
             detector = null
+            geminiClassifier?.close()
+            geminiClassifier = null
             bluetoothManager.desconectar()
-            DetectionStabilityTracker.reset()
-            Log.d(TAG, "WasteDetector y Bluetooth cerrados")
+            PresenceStabilityTracker.reset()
+            FrameChangeDetector.release()
+            Log.d(TAG, "Recursos liberados")
         }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
         when {
             detectorError != null -> {
-                ErrorScreen(
+                ErrorScreenGemini(
                     error = detectorError!!,
                     onNavigateBack = onNavigateBack
                 )
             }
-            !isDetectorReady -> {
-                LoadingScreen()
+            geminiError != null -> {
+                ErrorScreenGemini(
+                    error = "Error de Gemini: $geminiError\n\nVerifica tu API key.",
+                    onNavigateBack = onNavigateBack
+                )
+            }
+            !isDetectorReady || !isGeminiReady -> {
+                LoadingScreenGemini()
             }
             else -> {
-                // Camara con deteccion y ROI fijo
-                CameraPreviewWithDetection(
+                // Cámara con detección YOLO
+                CameraPreviewWithDetectionGemini(
                     lifecycleOwner = lifecycleOwner,
                     detector = detector!!,
                     roiRect = roiRect,
                     onDetectionResult = { result ->
                         currentResult = result
+                    },
+                    onBitmapCaptured = { bitmap ->
+                        capturedBitmap = bitmap
                     }
                 )
 
-                // Overlay con ROI fijo y detecciones
+                // Overlay con ROI
                 cameraImageSize?.let { (imgWidth, imgHeight) ->
-                    DetectionOverlay(
+                    DetectionOverlayGemini(
                         detections = currentResult?.boxes ?: emptyList(),
                         imageWidth = imgWidth,
                         imageHeight = imgHeight,
@@ -1276,7 +1282,7 @@ private fun DetectionScreen(
 
                 // UI superpuesta
                 Column(modifier = Modifier.fillMaxSize()) {
-                    // Header con conexion ESP32
+                    // Header
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1298,7 +1304,7 @@ private fun DetectionScreen(
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Clasificador IA v2",
+                                text = "YOLO + Gemini AI",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold
@@ -1306,15 +1312,17 @@ private fun DetectionScreen(
                             Text(
                                 text = if (bluetoothConectado) "ESP32 conectado" else "ESP32 desconectado",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (bluetoothConectado) BioWayColors.BrandGreen else Color.Red.copy(alpha = 0.8f)
+                                color = if (bluetoothConectado) BioWayColors.PrimaryGreen else Color.Red.copy(alpha = 0.8f)
                             )
                         }
 
-                        // Boton de conexion ESP32 (minimalista)
+                        // Botón de conexión ESP32
                         Surface(
                             onClick = {
-                                if (!bluetoothConectado && !conectando) {
-                                    // Incrementar trigger para iniciar conexion
+                                if (!bluetoothPermissions.allPermissionsGranted) {
+                                    // Solicitar permisos primero
+                                    bluetoothPermissions.launchMultiplePermissionRequest()
+                                } else if (!bluetoothConectado && !conectando) {
                                     triggerConexion++
                                 } else if (bluetoothConectado) {
                                     bluetoothManager.desconectar()
@@ -1324,7 +1332,7 @@ private fun DetectionScreen(
                             },
                             shape = RoundedCornerShape(20.dp),
                             color = if (bluetoothConectado)
-                                BioWayColors.BrandGreen.copy(alpha = 0.2f)
+                                BioWayColors.PrimaryGreen.copy(alpha = 0.2f)
                             else
                                 Color.Red.copy(alpha = 0.2f)
                         ) {
@@ -1346,7 +1354,7 @@ private fun DetectionScreen(
                                         else
                                             Icons.Default.BluetoothDisabled,
                                         contentDescription = null,
-                                        tint = if (bluetoothConectado) BioWayColors.BrandGreen else Color.Red,
+                                        tint = if (bluetoothConectado) BioWayColors.PrimaryGreen else Color.Red,
                                         modifier = Modifier.size(16.dp)
                                     )
                                 }
@@ -1362,109 +1370,29 @@ private fun DetectionScreen(
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    // ═══════════════════════════════════════════════════════════════
-                    // PANEL DE ESTABILIDAD Y DEPOSITO
-                    // ═══════════════════════════════════════════════════════════════
-                    if (currentCategory != null || isDepositing || depositStatus.isNotEmpty()) {
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            color = Color.Black.copy(alpha = 0.85f)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                if (isDepositing) {
-                                    // Estado: Depositando (esperando LISTO del ESP32)
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                        ) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier.size(24.dp),
-                                                color = BioWayColors.BrandGreen,
-                                                strokeWidth = 3.dp
-                                            )
-                                            Text(
-                                                text = depositStatus,
-                                                style = MaterialTheme.typography.titleMedium,
-                                                color = BioWayColors.BrandGreen,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = "Esperando confirmación del ESP32...",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = Color.White.copy(alpha = 0.6f)
-                                        )
-                                    }
-                                } else if (depositStatus.startsWith("✓")) {
-                                    // Estado: Deposito completado
-                                    Text(
-                                        text = depositStatus,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = BioWayColors.BrandGreen,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                } else if (currentCategory != null) {
-                                    // Estado: Detectando / Esperando estabilidad
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                    ) {
-                                        Text(
-                                            text = currentCategory!!.emoji,
-                                            fontSize = 28.sp
-                                        )
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = currentCategory!!.displayName,
-                                                style = MaterialTheme.typography.titleMedium,
-                                                color = Color(currentCategory!!.color),
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            Text(
-                                                text = if (bluetoothConectado)
-                                                    "Mantenlo ${String.format("%.1f", (1f - stabilityProgress) * 3)}s para depositar"
-                                                else
-                                                    "Conecta ESP32 para depositar",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = Color.White.copy(alpha = 0.7f)
-                                            )
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                    // Barra de progreso de estabilidad
-                                    LinearProgressIndicator(
-                                        progress = { stabilityProgress },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(6.dp)
-                                            .clip(RoundedCornerShape(3.dp)),
-                                        color = Color(currentCategory!!.color),
-                                        trackColor = Color.White.copy(alpha = 0.2f)
-                                    )
-                                }
-                            }
+                    // Panel de estado de clasificación
+                    ClassificationStatusPanel(
+                        classificationState = classificationState,
+                        presenceProgress = presenceProgress,
+                        geminiResult = geminiResult,
+                        depositStatus = depositStatus,
+                        bluetoothConectado = bluetoothConectado,
+                        hasBaseline = hasBaseline,
+                        detectionSource = detectionSource,
+                        onCaptureBaseline = {
+                            Log.d(TAG, "📷 Recapturando baseline manualmente...")
+                            triggerCaptureBaseline++
                         }
-                    }
+                    )
 
-                    // Panel de resultados (detecciones)
-                    DetectionResultsPanel(
-                        detections = currentResult?.boxes ?: emptyList()
+                    // Panel de detecciones YOLO (debug)
+                    DetectionResultsPanelGemini(
+                        detections = currentResult?.boxes ?: emptyList(),
+                        classificationState = classificationState
                     )
                 }
 
-                // Indicador de FPS y tiempo de inferencia (esquina superior derecha)
+                // Indicador de estado en esquina
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -1482,7 +1410,7 @@ private fun DetectionScreen(
                             Text(
                                 text = String.format("%.0f ms", currentResult?.inferenceTimeMs ?: 0.0),
                                 style = MaterialTheme.typography.labelSmall,
-                                color = BioWayColors.BrandGreen
+                                color = Color(0xFF9C7BFF)
                             )
                             Text(
                                 text = String.format("%.1f FPS", currentResult?.fps ?: 0.0),
@@ -1498,24 +1426,277 @@ private fun DetectionScreen(
 }
 
 @Composable
-private fun CameraPreviewWithDetection(
+private fun ClassificationStatusPanel(
+    classificationState: ClassificationState,
+    presenceProgress: Float,
+    geminiResult: GeminiClassificationResult?,
+    depositStatus: String,
+    bluetoothConectado: Boolean,
+    hasBaseline: Boolean,
+    detectionSource: DetectionSource,
+    onCaptureBaseline: () -> Unit
+) {
+    val geminiColor = Color(0xFF9C7BFF)
+    val frameChangeColor = Color(0xFFFF9800) // Naranja para indicar fallback
+
+    // Mostrar panel de baseline si está en IDLE y falta baseline
+    if (classificationState == ClassificationState.IDLE) {
+        if (bluetoothConectado && !hasBaseline) {
+            // Mostrar aviso de que falta baseline
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = frameChangeColor.copy(alpha = 0.2f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(text = "📷", fontSize = 24.sp)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Capturar plato vacío",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Necesario para detectar objetos no reconocidos por YOLO",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
+                    }
+                    Button(
+                        onClick = onCaptureBaseline,
+                        colors = ButtonDefaults.buttonColors(containerColor = frameChangeColor),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text("Capturar", fontSize = 12.sp)
+                    }
+                }
+            }
+        }
+        return
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = Color.Black.copy(alpha = 0.85f)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            when (classificationState) {
+                ClassificationState.DETECTING_PRESENCE -> {
+                    val isFrameChangeSource = detectionSource == DetectionSource.FRAME_CHANGE
+                    val sourceColor = if (isFrameChangeSource) frameChangeColor else geminiColor
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = if (isFrameChangeSource) "🔄" else "🔍",
+                            fontSize = 28.sp
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (isFrameChangeSource) "Objeto detectado" else "Material detectado",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = if (isFrameChangeSource)
+                                    "Por cambio de frame (YOLO no reconoce)"
+                                else
+                                    "Por YOLO",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = sourceColor.copy(alpha = 0.8f)
+                            )
+                            Text(
+                                text = "Estabilizando... ${String.format("%.1f", (1f - presenceProgress) * 2.0)}s",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LinearProgressIndicator(
+                        progress = { presenceProgress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp)),
+                        color = sourceColor,
+                        trackColor = Color.White.copy(alpha = 0.2f)
+                    )
+                }
+
+                ClassificationState.PRESENCE_STABLE, ClassificationState.CAPTURING_IMAGE -> {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = geminiColor,
+                            strokeWidth = 3.dp
+                        )
+                        Text(
+                            text = "Capturando imagen...",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = geminiColor,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                ClassificationState.CLASSIFYING_GEMINI -> {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = geminiColor,
+                            strokeWidth = 3.dp
+                        )
+                        Column {
+                            Text(
+                                text = "Gemini AI analizando...",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = geminiColor,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Clasificando residuo",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                }
+
+                ClassificationState.CLASSIFICATION_READY -> {
+                    geminiResult?.let { result ->
+                        // Verificar si es NO_DETECTADO para mostrar mensaje diferente
+                        val isNoDetectado = result.category == MaterialCategoryGemini.NO_DETECTADO
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = if (isNoDetectado) "🔄" else result.category.emoji,
+                                fontSize = 32.sp
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (isNoDetectado) "No detectado" else result.category.displayName,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = if (isNoDetectado) Color(0xFFFF9800) else Color(result.category.color),
+                                    fontWeight = FontWeight.Bold
+                                )
+                                if (isNoDetectado) {
+                                    Text(
+                                        text = "Reintentando en 2s...",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFFFF9800).copy(alpha = 0.8f)
+                                    )
+                                } else {
+                                    Text(
+                                        text = "Confianza: ${result.confidence}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color.White.copy(alpha = 0.7f)
+                                    )
+                                }
+                                Text(
+                                    text = result.reasoning,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.5f),
+                                    maxLines = 2
+                                )
+                            }
+                        }
+                        if (!bluetoothConectado && !isNoDetectado) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Conecta ESP32 para depositar",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Red.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                }
+
+                ClassificationState.DEPOSITING -> {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = BioWayColors.PrimaryGreen,
+                            strokeWidth = 3.dp
+                        )
+                        Column {
+                            Text(
+                                text = depositStatus,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = BioWayColors.PrimaryGreen,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Esperando confirmación del ESP32...",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                }
+
+                ClassificationState.DEPOSIT_COMPLETE -> {
+                    Text(
+                        text = depositStatus,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = BioWayColors.PrimaryGreen,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                else -> {}
+            }
+        }
+    }
+}
+
+@Composable
+private fun CameraPreviewWithDetectionGemini(
     lifecycleOwner: LifecycleOwner,
     detector: WasteDetector,
-    roiRect: ROIRect,
-    onDetectionResult: (DetectionResult) -> Unit
+    roiRect: ROIRectGemini,
+    onDetectionResult: (DetectionResult) -> Unit,
+    onBitmapCaptured: (Bitmap) -> Unit
 ) {
     val context = LocalContext.current
     var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     val executor = remember { Executors.newSingleThreadExecutor() }
     val isProcessing = remember { AtomicBoolean(false) }
 
-    // Limpiar camara y executor al salir
     DisposableEffect(Unit) {
         onDispose {
             try {
                 cameraProvider?.unbindAll()
                 executor.shutdown()
-                Log.d(TAG, "CameraPreviewWithDetection: Camara y executor liberados")
+                Log.d(TAG, "CameraPreviewWithDetectionGemini: Recursos liberados")
             } catch (e: Exception) {
                 Log.e(TAG, "Error liberando recursos: ${e.message}")
             }
@@ -1547,12 +1728,13 @@ private fun CameraPreviewWithDetection(
                             .also {
                                 it.setAnalyzer(executor) { imageProxy ->
                                     if (!isProcessing.getAndSet(true)) {
-                                        processImageProxyWithROI(
+                                        processImageProxyWithROIGemini(
                                             imageProxy = imageProxy,
                                             detector = detector,
                                             roiRect = roiRect,
-                                            onResult = { result ->
+                                            onResult = { result, bitmap ->
                                                 onDetectionResult(result)
+                                                onBitmapCaptured(bitmap)
                                                 isProcessing.set(false)
                                             },
                                             onError = {
@@ -1572,9 +1754,9 @@ private fun CameraPreviewWithDetection(
                             preview,
                             imageAnalysis
                         )
-                        Log.d(TAG, "Camara con deteccion iniciada")
+                        Log.d(TAG, "Cámara con detección Gemini iniciada")
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error iniciando camara: ${e.message}", e)
+                        Log.e(TAG, "Error iniciando cámara: ${e.message}", e)
                     }
                 }, ContextCompat.getMainExecutor(ctx))
             }
@@ -1583,48 +1765,32 @@ private fun CameraPreviewWithDetection(
     )
 }
 
-private fun processImageProxyWithROI(
+private fun processImageProxyWithROIGemini(
     imageProxy: ImageProxy,
     detector: WasteDetector,
-    roiRect: ROIRect,
-    onResult: (DetectionResult) -> Unit,
+    roiRect: ROIRectGemini,
+    onResult: (DetectionResult, Bitmap) -> Unit,
     onError: () -> Unit
 ) {
     try {
-        val bitmap = imageProxyToBitmap(imageProxy)
+        val bitmap = imageProxyToBitmapGemini(imageProxy)
         if (bitmap != null) {
-            val rotatedBitmap = rotateBitmap(bitmap, imageProxy.imageInfo.rotationDegrees)
+            val rotatedBitmap = rotateBitmapGemini(bitmap, imageProxy.imageInfo.rotationDegrees)
+            val croppedBitmap = cropBitmapToROIGemini(rotatedBitmap, roiRect)
 
-            // Recortar al ROI
-            val croppedBitmap = cropBitmapToROI(rotatedBitmap, roiRect)
             val result = detector.detect(croppedBitmap)
 
-            // ══════════════════════════════════════════════════════════
-            // FILTRAR DETECCIONES DEL PLATO DE FONDO
-            // ══════════════════════════════════════════════════════════
-            val filteredBoxes = BackgroundPlateFilter.filterDetections(
-                detections = result.boxes,
-                roiWidth = croppedBitmap.width,
-                roiHeight = croppedBitmap.height
-            )
-
-            val filteredResult = DetectionResult(
-                boxes = filteredBoxes,
-                inferenceTimeMs = result.inferenceTimeMs,
-                fps = result.fps,
-                imageWidth = result.imageWidth,
-                imageHeight = result.imageHeight
-            )
-            // ══════════════════════════════════════════════════════════
-
-            // Ajustar coordenadas al espacio original
-            val adjustedResult = adjustDetectionsToFullImage(
-                filteredResult,
+            val adjustedResult = adjustDetectionsToFullImageGemini(
+                result,
                 roiRect,
                 rotatedBitmap.width,
                 rotatedBitmap.height
             )
-            onResult(adjustedResult)
+
+            // Pasar el bitmap COMPLETO (no recortado) para Gemini
+            // Gemini es capaz de interpretar la imagen completa y encontrar el objeto
+            // El ROI recortado (336x448) puede ser muy pequeño o cortar el objeto
+            onResult(adjustedResult, rotatedBitmap)
         } else {
             onError()
         }
@@ -1636,7 +1802,7 @@ private fun processImageProxyWithROI(
     }
 }
 
-private fun cropBitmapToROI(bitmap: Bitmap, roi: ROIRect): Bitmap {
+private fun cropBitmapToROIGemini(bitmap: Bitmap, roi: ROIRectGemini): Bitmap {
     val x = (roi.left * bitmap.width).toInt().coerceIn(0, bitmap.width - 1)
     val y = (roi.top * bitmap.height).toInt().coerceIn(0, bitmap.height - 1)
     val width = (roi.width * bitmap.width).toInt().coerceIn(1, bitmap.width - x)
@@ -1645,9 +1811,9 @@ private fun cropBitmapToROI(bitmap: Bitmap, roi: ROIRect): Bitmap {
     return Bitmap.createBitmap(bitmap, x, y, width, height)
 }
 
-private fun adjustDetectionsToFullImage(
+private fun adjustDetectionsToFullImageGemini(
     result: DetectionResult,
-    roi: ROIRect,
+    roi: ROIRectGemini,
     fullWidth: Int,
     fullHeight: Int
 ): DetectionResult {
@@ -1684,7 +1850,7 @@ private fun adjustDetectionsToFullImage(
     )
 }
 
-private fun rotateBitmap(bitmap: Bitmap, rotationDegrees: Int): Bitmap {
+private fun rotateBitmapGemini(bitmap: Bitmap, rotationDegrees: Int): Bitmap {
     if (rotationDegrees == 0) return bitmap
     val matrix = android.graphics.Matrix()
     matrix.postRotate(rotationDegrees.toFloat())
@@ -1692,7 +1858,7 @@ private fun rotateBitmap(bitmap: Bitmap, rotationDegrees: Int): Bitmap {
 }
 
 @androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
-private fun imageProxyToBitmap(imageProxy: ImageProxy): Bitmap? {
+private fun imageProxyToBitmapGemini(imageProxy: ImageProxy): Bitmap? {
     return try {
         val image = imageProxy.image ?: return null
         val planes = image.planes
@@ -1720,7 +1886,7 @@ private fun imageProxyToBitmap(imageProxy: ImageProxy): Bitmap? {
         val out = java.io.ByteArrayOutputStream()
         yuvImage.compressToJpeg(
             android.graphics.Rect(0, 0, image.width, image.height),
-            90,
+            100,  // Máxima calidad para evitar imagen borrosa en Gemini
             out
         )
 
@@ -1733,14 +1899,15 @@ private fun imageProxyToBitmap(imageProxy: ImageProxy): Bitmap? {
 }
 
 @Composable
-private fun DetectionOverlay(
+private fun DetectionOverlayGemini(
     detections: List<Detection>,
     imageWidth: Int,
     imageHeight: Int,
-    roiRect: ROIRect,
+    roiRect: ROIRectGemini,
     modifier: Modifier = Modifier
 ) {
     val imageAspect = imageWidth.toFloat() / imageHeight.toFloat()
+    val geminiColor = Color(0xFF9C7BFF)
 
     Canvas(modifier = modifier) {
         val canvasAspect = size.width / size.height
@@ -1763,7 +1930,6 @@ private fun DetectionOverlay(
         val roiRight = roiRect.right * imageWidth * scale + offsetX
         val roiBottom = roiRect.bottom * imageHeight * scale + offsetY
 
-        // Area oscurecida fuera del ROI
         val dimColor = Color.Black.copy(alpha = 0.5f)
 
         drawRect(dimColor, Offset(offsetX, offsetY), Size(imageWidth * scale, roiTop - offsetY))
@@ -1771,17 +1937,16 @@ private fun DetectionOverlay(
         drawRect(dimColor, Offset(offsetX, roiTop), Size(roiLeft - offsetX, roiBottom - roiTop))
         drawRect(dimColor, Offset(roiRight, roiTop), Size((offsetX + imageWidth * scale) - roiRight, roiBottom - roiTop))
 
-        // Borde del ROI (fijo, no editable)
         drawRect(
-            color = BioWayColors.BrandGreen,
+            color = geminiColor,
             topLeft = Offset(roiLeft, roiTop),
             size = Size(roiRight - roiLeft, roiBottom - roiTop),
             style = Stroke(width = 3f)
         )
 
-        // Bounding boxes de detecciones
+        // Bounding boxes de detecciones YOLO (para debug)
         for (detection in detections) {
-            val color = getColorForClass(detection.classIndex)
+            val color = Color.White.copy(alpha = 0.5f)
             val box = detection.boundingBox
 
             val left = box.left * scale + offsetX
@@ -1793,41 +1958,18 @@ private fun DetectionOverlay(
                 color = color,
                 topLeft = Offset(left, top),
                 size = Size(right - left, bottom - top),
-                style = Stroke(width = 4f)
-            )
-
-            val labelHeight = 36f
-            drawRect(
-                color = color,
-                topLeft = Offset(left, top - labelHeight),
-                size = Size(right - left, labelHeight)
+                style = Stroke(width = 2f)
             )
         }
     }
 }
 
-// ==================== COMPONENTES COMUNES ====================
-
-private fun getColorForClass(classIndex: Int): Color {
-    val colors = listOf(
-        Color(0xFFFF0000),
-        Color(0xFF8B4513),
-        Color(0xFF00BFFF),
-        Color(0xFFC0C0C0),
-        Color(0xFFFFFF00),
-        Color(0xFF00FF00),
-        Color(0xFF32CD32),
-        Color(0xFF008000),
-        Color(0xFF228B22),
-        Color(0xFF90EE90),
-        Color(0xFF006400),
-        Color(0xFF808080)
-    )
-    return colors.getOrElse(classIndex % colors.size) { Color.White }
-}
+// ══════════════════════════════════════════════════════════════════════════════
+// COMPONENTES UI AUXILIARES
+// ══════════════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun PermissionRequest(
+private fun PermissionRequestGemini(
     onRequestPermission: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
@@ -1842,13 +1984,13 @@ private fun PermissionRequest(
             imageVector = Icons.Default.CameraAlt,
             contentDescription = null,
             modifier = Modifier.size(80.dp),
-            tint = BioWayColors.BrandGreen
+            tint = Color(0xFF9C7BFF)
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Permiso de Camara Requerido",
+            text = "Permiso de Cámara Requerido",
             style = MaterialTheme.typography.headlineSmall,
             color = Color.White
         )
@@ -1856,18 +1998,19 @@ private fun PermissionRequest(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Para clasificar residuos, necesitamos acceso a la camara.",
+            text = "Para clasificar residuos con Gemini AI, necesitamos acceso a la cámara.",
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.7f)
+            color = Color.White.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
             onClick = onRequestPermission,
-            colors = ButtonDefaults.buttonColors(containerColor = BioWayColors.BrandGreen)
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9C7BFF))
         ) {
-            Text("Permitir Camara")
+            Text("Permitir Cámara")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -1879,7 +2022,7 @@ private fun PermissionRequest(
 }
 
 @Composable
-private fun LoadingScreen() {
+private fun LoadingScreenGemini() {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -1888,19 +2031,19 @@ private fun LoadingScreen() {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator(
-                color = BioWayColors.BrandGreen,
+                color = Color(0xFF9C7BFF),
                 modifier = Modifier.size(56.dp),
                 strokeWidth = 5.dp
             )
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "Cargando modelo de IA...",
+                text = "Iniciando YOLO + Gemini AI...",
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Esto puede tardar unos segundos",
+                text = "Cargando modelos de IA",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.White.copy(alpha = 0.6f)
             )
@@ -1909,7 +2052,7 @@ private fun LoadingScreen() {
 }
 
 @Composable
-private fun ErrorScreen(
+private fun ErrorScreenGemini(
     error: String,
     onNavigateBack: () -> Unit
 ) {
@@ -1939,7 +2082,7 @@ private fun ErrorScreen(
 
         Button(
             onClick = onNavigateBack,
-            colors = ButtonDefaults.buttonColors(containerColor = BioWayColors.BrandGreen)
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9C7BFF))
         ) {
             Text("Volver")
         }
@@ -1947,7 +2090,10 @@ private fun ErrorScreen(
 }
 
 @Composable
-private fun DetectionResultsPanel(detections: List<Detection>) {
+private fun DetectionResultsPanelGemini(
+    detections: List<Detection>,
+    classificationState: ClassificationState
+) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -1956,86 +2102,37 @@ private fun DetectionResultsPanel(detections: List<Detection>) {
         color = Color.Black.copy(alpha = 0.8f)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Detecciones: ${detections.size}",
-                style = MaterialTheme.typography.titleSmall,
-                color = Color.White,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (detections.isEmpty()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Text(
-                    text = "Apunta la camara hacia un residuo...",
+                    text = "YOLO (Presencia)",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "• ${detections.size} detecciones",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.5f)
                 )
-            } else {
-                detections.take(5).forEach { detection ->
-                    DetectionItem(detection = detection)
-                }
-                if (detections.size > 5) {
-                    Text(
-                        text = "+ ${detections.size - 5} mas...",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.5f)
-                    )
-                }
             }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = when (classificationState) {
+                    ClassificationState.IDLE -> "Esperando material..."
+                    ClassificationState.DETECTING_PRESENCE -> "Material detectado, estabilizando..."
+                    ClassificationState.CLASSIFYING_GEMINI -> "Gemini clasificando..."
+                    ClassificationState.CLASSIFICATION_READY -> "Clasificación lista"
+                    ClassificationState.DEPOSITING -> "Depositando..."
+                    else -> "Procesando..."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF9C7BFF).copy(alpha = 0.8f)
+            )
         }
-    }
-}
-
-@Composable
-private fun DetectionItem(detection: Detection) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(12.dp)
-                .background(
-                    getColorForClass(detection.classIndex),
-                    RoundedCornerShape(2.dp)
-                )
-        )
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        Text(
-            text = translateClassName(detection.className),
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.White,
-            modifier = Modifier.weight(1f)
-        )
-
-        Text(
-            text = String.format("%.0f%%", detection.confidence * 100),
-            style = MaterialTheme.typography.bodyMedium,
-            color = BioWayColors.BrandGreen,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-private fun translateClassName(className: String): String {
-    return when (className.lowercase()) {
-        "biological" -> "Organico"
-        "cardboard" -> "Carton"
-        "glass" -> "Vidrio"
-        "metal" -> "Metal"
-        "paper" -> "Papel"
-        "plastic" -> "Plastico"
-        "plastic-others" -> "Plastico (Otros)"
-        "plastic-pet" -> "Plastico PET"
-        "plastic-pe_hd" -> "Plastico PE-HD"
-        "plastic-pp" -> "Plastico PP"
-        "plastic-ps" -> "Plastico PS"
-        "trash" -> "Basura"
-        else -> className
     }
 }

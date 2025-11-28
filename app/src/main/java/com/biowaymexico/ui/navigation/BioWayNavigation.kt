@@ -66,6 +66,7 @@ sealed class BioWayDestinations(val route: String) {
     data object BoteBioWayNearby : BioWayDestinations("bote_bioway_nearby")
     data object BoteBioWayClasificador : BioWayDestinations("bote_bioway_clasificador")
     data object BoteBioWayClasificadorYOLO : BioWayDestinations("bote_bioway_clasificador_yolo")
+    data object BoteBioWayClasificadorGemini : BioWayDestinations("bote_bioway_clasificador_gemini")
     data object BoteBioWayPruebaServos : BioWayDestinations("bote_bioway_prueba_servos")
 }
 

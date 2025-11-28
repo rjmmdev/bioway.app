@@ -231,6 +231,7 @@ fun BioWayNavHost(
                 onNavigateToNearby = { navController.navigate(BioWayDestinations.BoteBioWayNearby.route) },
                 onNavigateToClasificador = { navController.navigate(BioWayDestinations.BoteBioWayClasificador.route) },
                 onNavigateToClasificadorYOLO = { navController.navigate(BioWayDestinations.BoteBioWayClasificadorYOLO.route) },
+                onNavigateToClasificadorGemini = { navController.navigate(BioWayDestinations.BoteBioWayClasificadorGemini.route) },
                 onNavigateToPruebaServos = { navController.navigate(BioWayDestinations.BoteBioWayPruebaServos.route) },
                 onLogout = {
                     navController.navigate(BioWayDestinations.Login.route) {
@@ -242,31 +243,75 @@ fun BioWayNavHost(
 
         composable(BioWayDestinations.BoteBioWayNFC.route) {
             com.biowaymexico.ui.screens.bote_bioway.CelularEnBoteNFCScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = {
+                    if (!navController.popBackStack()) {
+                        navController.navigate(BioWayDestinations.BoteBioWayMain.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                }
             )
         }
 
         composable(BioWayDestinations.BoteBioWayNearby.route) {
             com.biowaymexico.ui.screens.bote_bioway.CelularEnBoteNearbyScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = {
+                    if (!navController.popBackStack()) {
+                        navController.navigate(BioWayDestinations.BoteBioWayMain.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                }
             )
         }
 
         composable(BioWayDestinations.BoteBioWayClasificador.route) {
             com.biowaymexico.ui.screens.bote_bioway.ClasificadorBoteScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = {
+                    if (!navController.popBackStack()) {
+                        navController.navigate(BioWayDestinations.BoteBioWayMain.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                }
             )
         }
 
         composable(BioWayDestinations.BoteBioWayPruebaServos.route) {
             com.biowaymexico.ui.screens.bote_bioway.PruebaServosScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = {
+                    if (!navController.popBackStack()) {
+                        navController.navigate(BioWayDestinations.BoteBioWayMain.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                }
             )
         }
 
         composable(BioWayDestinations.BoteBioWayClasificadorYOLO.route) {
             com.biowaymexico.ui.screens.bote_bioway.ClasificadorBoteYOLOScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = {
+                    // Navegación segura: si popBackStack() falla, ir a BoteBioWayMain
+                    if (!navController.popBackStack()) {
+                        navController.navigate(BioWayDestinations.BoteBioWayMain.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                }
+            )
+        }
+
+        composable(BioWayDestinations.BoteBioWayClasificadorGemini.route) {
+            com.biowaymexico.ui.screens.bote_bioway.clasificador_gemini.ClasificadorGeminiScreen(
+                onNavigateBack = {
+                    // Navegación segura: si popBackStack() falla, ir a BoteBioWayMain
+                    if (!navController.popBackStack()) {
+                        navController.navigate(BioWayDestinations.BoteBioWayMain.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                }
             )
         }
     }

@@ -1,7 +1,9 @@
 package com.biowaymexico.ui.screens.bote_bioway
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -24,6 +26,7 @@ fun BoteBioWayMainScreen(
     onNavigateToNearby: () -> Unit,
     onNavigateToClasificador: () -> Unit,
     onNavigateToClasificadorYOLO: () -> Unit = {},
+    onNavigateToClasificadorGemini: () -> Unit = {},
     onNavigateToPruebaServos: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
@@ -34,6 +37,7 @@ fun BoteBioWayMainScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -82,6 +86,14 @@ fun BoteBioWayMainScreen(
                 title = "Clasificador IA v2",
                 description = "Nuevo modelo YOLO con 12 categorias (precision mejorada)",
                 onClick = onNavigateToClasificadorYOLO
+            )
+
+            // Opción Clasificador Gemini (YOLO + Gemini AI)
+            BoteOptionCard(
+                icon = Icons.Default.Psychology,
+                title = "Clasificador IA + Gemini",
+                description = "YOLO detecta presencia, Gemini clasifica (mayor precision)",
+                onClick = onNavigateToClasificadorGemini
             )
 
             // Opción Prueba Servos

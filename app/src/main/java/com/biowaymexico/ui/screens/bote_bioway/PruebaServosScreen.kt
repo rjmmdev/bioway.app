@@ -1,5 +1,6 @@
 package com.biowaymexico.ui.screens.bote_bioway
 
+import android.Manifest
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,10 +20,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.biowaymexico.ui.theme.BioWayColors
 import com.biowaymexico.utils.BluetoothManager
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -42,15 +46,31 @@ private const val TAG = "PruebaServos"
  *
  * Requiere cargar ESP32_PRUEBA_SERVOS.txt en el ESP32
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun PruebaServosScreen(
     onNavigateBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    // Permisos de Bluetooth (Android 12+)
+    val bluetoothPermissions = rememberMultiplePermissionsState(
+        listOf(
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN
+        )
+    )
+
+    // Solicitar permisos al inicio
+    LaunchedEffect(Unit) {
+        if (!bluetoothPermissions.allPermissionsGranted) {
+            bluetoothPermissions.launchMultiplePermissionRequest()
+        }
+    }
 
     // Estado de conexión Bluetooth
-    val bluetoothManager = remember { BluetoothManager() }
+    val bluetoothManager = remember { BluetoothManager(context) }
     var bluetoothConectado by remember { mutableStateOf(false) }
     var estadoConexion by remember { mutableStateOf("Desconectado") }
     var conectando by remember { mutableStateOf(false) }
@@ -147,6 +167,12 @@ fun PruebaServosScreen(
 
                     Button(
                         onClick = {
+                            // Verificar permisos primero
+                            if (!bluetoothPermissions.allPermissionsGranted) {
+                                bluetoothPermissions.launchMultiplePermissionRequest()
+                                return@Button
+                            }
+
                             if (!bluetoothConectado && !conectando) {
                                 conectando = true
                                 estadoConexion = "Conectando..."

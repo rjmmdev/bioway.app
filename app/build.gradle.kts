@@ -111,6 +111,9 @@ dependencies {
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.google.firebase:firebase-analytics-ktx")
 
+    // Google Generative AI - Gemini
+    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
